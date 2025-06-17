@@ -14,13 +14,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm run lint` - Lint code with Biome
 - `pnpm run lint:fix` - Lint code with Biome and fix issues
 - `pnpm run format` - Format code with Biome
+- `pnpm typecheck` - Type check code with tsc
 - `pnpm run test` - Run tests with Vitest
 - `pnpm alloy` - Run Alloy model checks
 - `pnpm tlc` - Run TLA+ model checks
 
 ## Development Workflow
 
-Run `pnpm run lint:fix`, `pnpm run format` after making changes to ensure code quality and consistency.
+- Run `pnpm typecheck`, `pnpm run lint:fix` and `pnpm run format` after making changes to ensure code quality and consistency.
+- Update `docs/progress.md` with current progress and any issues encountered.
 
 ## Backend Architecture
 
@@ -35,14 +37,46 @@ Hexagonal architecture with domain-driven design principles:
     - `src/core/application/context.ts`: Context type for dependency injection
     - `src/core/application/${domain}/${usecase}.ts`: Application services that orchestrate domain logic. Each service is a function that takes a context object.
 
+### Types example
+
+```typescript
+// src/core/domain/post/types.ts
+
+import { z } from "zod/v4";
+import { paginationSchema } from "@/lib/pagination.ts";
+
+export const postIdSchema = z.uuid().brand("postId");
+export type PostId = z.infer<typeof postIdSchema>;
+
+export const postSchema = z.object({
+  id: postIdSchema,
+  content: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+export type Post = z.infer<typeof postSchema>;
+
+// ...
+
+export const listPostQuerySchema = z.object({
+  pagination: paginationSchema,
+  filter: z
+    .object({
+      text: z.string().optional(),
+    })
+    .optional(),
+});
+export type ListPostQuery = z.infer<typeof listPostQuerySchema>;
+```
+
 ### Ports example
 
 ```typescript
 // src/core/domain/post/ports/postRepository.ts
 
 export interface PostRepository {
-  create(post: CreatePostParams): Promise<Result<Post, RepositoryError>>;
-  getById(id: string): Promise<Result<Post, RepositoryError>>;
+  create(post: CreatePostParams): ResultAsync<Post, RepositoryError>;
+  list(query: ListPostQuery): ResultAsync<Post, RepositoryError>;
   // Other repository methods...
 }
 ```
@@ -52,20 +86,59 @@ export interface PostRepository {
 ```typescript
 // src/core/adapters/drizzleSqlite/postRepository.ts
 
-import type { Result } from "neverthrow";
+import type { ResultAsync } from "neverthrow";
 import type { PostRepository } from "@/domain/post/ports/postRepository";
-import type { CreatePostParams, Post } from "@/domain/post/types";
+import { type CreatePostParams, type ListPostQuery, type Post, postSchema, } from "@/domain/post/types";
 import type { Database } from "./database";
 
 export class DrizzleSqlitePostRepository implements PostRepository {
   constructor(private readonly db: Database) {}
 
-  async getById(id: string): Promise<Result<Post, RepositoryError>> {
-    // Implementation using Drizzle ORM
+  async create(post: CreatePostParams): ResultAsync<Post, RepositoryError> {
+    return ResultAsync.fromPromise(
+      this.db.insert(posts).values(post).returning(),
+      (error) => mapRepositoryError(error),
+    ).andThen((results) =>
+      validate(postSchema, results[0]).mapErr(
+        (error) =>
+          new RepositoryError(
+            RepositoryErrorCode.DATA_ERROR,
+            "Post validation failed",
+            error,
+          ),
+      ),
+    );
   }
 
-  async update(post: UpdatePostParams): Promise<Result<Post, RepositoryError>> {
-    // Implementation using Drizzle ORM
+  async list(query: ListPostQuery): ResultAsync<Post, RepositoryError> {
+    const { pagination, filter } = query;
+    const limit = pagination.limit;
+    const offset = (pagination.page - 1) * pagination.limit;
+
+    const filters = [
+      filter?.text ? like(posts.text, `%${filter.text}%`) : undefined,
+    ].filter((filter) => filter !== undefined);
+
+    return ResultAsync.fromPromise(
+      Promise.all([
+        this.db
+          .select()
+          .from(posts)
+          .where(and(...filters))
+          .limit(limit)
+          .offset(offset),
+        this.db
+          .select({ count: sql`count(*)` })
+          .from(posts)
+          .where(and(...filters)),
+      ]),
+      (error) => mapRepositoryError(error),
+    ).map(([items, countResult]) => ({
+      items: items
+        .map((item) => validate(postSchema, item).unwrapOr(null))
+        .filter((item) => item !== null),
+      count: Number(countResult[0].count),
+    }));
   }
 }
 ```
@@ -73,17 +146,26 @@ export class DrizzleSqlitePostRepository implements PostRepository {
 ### Application Service example
 
 ```typescript
-// src/core/application/post/updatePost.ts
+// src/core/application/post/createPost.ts
 
-import type { Context } from "../context";
+import { z } from "zod/v4";
+import { ResultAsync } from "neverthrow";
+import { validate } from "@/lib/validation.ts";
 import type { PostRepository } from "@/domain/post/ports/postRepository";
-import { Result } from "neverthrow";
+import type { Context } from "../context";
 
-export async function editPost(
+export const createPostInputSchema = z.object({
+  content: z.string().min(1).max(500),
+});
+export type CreatePostInput = z.infer<typeof createPostInputSchema>;
+
+export async function createPost(
   context: Context,
-  params: EditPostInput
-): Promise<Result<Post, RepositoryError>> {
-  return context.postRepository.update(params).mapErr(error => new ApplicationError("Failed to update post", error));
+  input: CreatePostInput
+): ResultAsync<Post, RepositoryError> {
+  return validate(createPostInputSchema, input)
+    .asyncAndThen((input) => context.postRepository.create(input).mapErr(error => new ApplicationError("Failed to create post", error)))
+    .mapErr((error) => new ApplicationError("createPost", "Failed to create a new post", error));
 }
 ```
 
@@ -117,13 +199,13 @@ Next.js 15.2.1 application code using:
 
 ## Error Handling
 
-- All backend functions return `Result<T, E>` or `Promise<Result<T, E>>` types using `neverthrow`
+- All backend functions return `Result<T, E>` or `ResultAsync<T, E>` types using `neverthrow`
 - Each modules has its own error types, e.g. `RepositoryError`, `ApplicationError`. Error types should extend a base `AnyError` class (`src/lib/errors.ts`)
 
 ## Testing
 
 - Create tests that validate formal method models
-- Use `pnpm run test` for tests
+- Use `pnpm test` for tests
 - Use `src/core/adapters/mock/${adapter}.ts` to create mock implementations of external services for testing
 
 ### Application Service Tests
