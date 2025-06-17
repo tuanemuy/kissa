@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { userIdSchema } from "../user/types";
 
 // Branded types
@@ -21,7 +21,7 @@ export const notificationSchema = z.object({
   type: notificationTypeSchema,
   title: z.string().max(200),
   message: z.string().max(1000),
-  data: z.record(z.unknown()).nullable(), // JSON data
+  data: z.record(z.string(), z.unknown()).nullable(), // JSON data
   isRead: z.boolean(),
   createdAt: z.date(),
 });
@@ -33,7 +33,7 @@ export const createNotificationParamsSchema = z.object({
   type: notificationTypeSchema,
   title: z.string().max(200),
   message: z.string().max(1000),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
 });
 export type CreateNotificationParams = z.infer<
   typeof createNotificationParamsSchema

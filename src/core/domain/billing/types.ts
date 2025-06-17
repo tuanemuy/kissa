@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { subscriptionPlanSchema, userIdSchema } from "../user/types";
 
 // Branded types

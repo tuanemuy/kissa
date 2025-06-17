@@ -4,7 +4,7 @@ import { ApplicationError, AuthenticationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import { type Result, err, ok } from "neverthrow";
 import { v7 as uuidv7 } from "uuid";
-import type { z } from "zod";
+import type { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const authenticateUserInputSchema = authenticateUserParamsSchema;

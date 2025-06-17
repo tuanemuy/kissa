@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import type { UserId } from "../user/types";
 import { userIdSchema } from "../user/types";
 

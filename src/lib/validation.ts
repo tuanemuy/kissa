@@ -1,5 +1,5 @@
 import { type Result, ResultAsync, err, ok } from "neverthrow";
-import type { z } from "zod";
+import type { z } from "zod/v4";
 import { AnyError } from "./error";
 
 export class ValidationError<T> extends AnyError {

@@ -2,7 +2,7 @@ import type { Session, User } from "@/core/domain/user/types";
 import { ApplicationError, AuthenticationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import { type Result, err, ok } from "neverthrow";
-import { z } from "zod";
+import { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const getSessionUserInputSchema = z.object({

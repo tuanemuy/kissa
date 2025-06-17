@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Branded types
 export const userIdSchema = z.string().uuid().brand("UserId");

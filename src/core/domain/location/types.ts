@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import { regionIdSchema } from "../region/types";
 import { userIdSchema } from "../user/types";
 

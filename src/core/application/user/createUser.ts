@@ -3,7 +3,7 @@ import { createUserParamsSchema } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import { type Result, err, ok } from "neverthrow";
-import type { z } from "zod";
+import type { z } from "zod/v4";
 import type { Context } from "../context";
 
 export const createUserInputSchema = createUserParamsSchema;
