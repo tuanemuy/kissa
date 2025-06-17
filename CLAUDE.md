@@ -15,6 +15,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm run lint:fix` - Lint code with Biome and fix issues
 - `pnpm run format` - Format code with Biome
 - `pnpm run test` - Run tests with Vitest
+- `pnpm alloy` - Run Alloy model checks
+- `pnpm tlc` - Run TLA+ model checks
+
+## Development Workflow
+
+Run `pnpm run lint:fix`, `pnpm run format` after making changes to ensure code quality and consistency.
 
 ## Backend Architecture
 
