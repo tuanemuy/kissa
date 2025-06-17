@@ -18,6 +18,7 @@
   },
   "linter": {
     "enabled": true,
+    "ignore": ["components/ui/**/*"],
     "rules": {
       "recommended": true,
       "security": {
