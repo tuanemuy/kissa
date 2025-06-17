@@ -75,8 +75,8 @@ export type ListPostQuery = z.infer<typeof listPostQuerySchema>;
 // src/core/domain/post/ports/postRepository.ts
 
 export interface PostRepository {
-  create(post: CreatePostParams): ResultAsync<Post, RepositoryError>;
-  list(query: ListPostQuery): ResultAsync<Post, RepositoryError>;
+  create(post: CreatePostParams): Promise<Result<Post, RepositoryError>>;
+  list(query: ListPostQuery): Promise<Result<Post, RepositoryError>>;
   // Other repository methods...
 }
 ```
@@ -86,7 +86,7 @@ export interface PostRepository {
 ```typescript
 // src/core/adapters/drizzleSqlite/postRepository.ts
 
-import type { ResultAsync } from "neverthrow";
+import type { Result } from "neverthrow";
 import type { PostRepository } from "@/domain/post/ports/postRepository";
 import { type CreatePostParams, type ListPostQuery, type Post, postSchema, } from "@/domain/post/types";
 import type { Database } from "./database";
@@ -94,23 +94,27 @@ import type { Database } from "./database";
 export class DrizzleSqlitePostRepository implements PostRepository {
   constructor(private readonly db: Database) {}
 
-  async create(post: CreatePostParams): ResultAsync<Post, RepositoryError> {
-    return ResultAsync.fromPromise(
-      this.db.insert(posts).values(post).returning(),
-      (error) => mapRepositoryError(error),
-    ).andThen((results) =>
-      validate(postSchema, results[0]).mapErr(
-        (error) =>
-          new RepositoryError(
-            RepositoryErrorCode.DATA_ERROR,
-            "Post validation failed",
-            error,
-          ),
-      ),
-    );
+  async create(params: CreatePostParams): Promise<Result<Post, RepositoryError>> {
+    try {
+      const result = await this.db
+        .insert(posts)
+        .values(params)
+        .returning();
+
+      const post = result[0];
+      if (!post) {
+        return err(new RepositoryError("Failed to create task"));
+      }
+
+      return validate(postSchema, post).mapErr((error) => {
+        return new RepositoryError("Invalid post data", error);
+      });
+    } catch (error) {
+      return err(new RepositoryError("Failed to create task", error));
+    }
   }
 
-  async list(query: ListPostQuery): ResultAsync<Post, RepositoryError> {
+  async list(query: ListPostQuery): Promise<Result<{ items: Post[], count: number }, RepositoryError>> {
     const { pagination, filter } = query;
     const limit = pagination.limit;
     const offset = (pagination.page - 1) * pagination.limit;
@@ -119,8 +123,8 @@ export class DrizzleSqlitePostRepository implements PostRepository {
       filter?.text ? like(posts.text, `%${filter.text}%`) : undefined,
     ].filter((filter) => filter !== undefined);
 
-    return ResultAsync.fromPromise(
-      Promise.all([
+    try {
+      const [items, countResult] = await Promise.all([
         this.db
           .select()
           .from(posts)
@@ -131,14 +135,17 @@ export class DrizzleSqlitePostRepository implements PostRepository {
           .select({ count: sql`count(*)` })
           .from(posts)
           .where(and(...filters)),
-      ]),
-      (error) => mapRepositoryError(error),
-    ).map(([items, countResult]) => ({
-      items: items
-        .map((item) => validate(postSchema, item).unwrapOr(null))
-        .filter((item) => item !== null),
-      count: Number(countResult[0].count),
-    }));
+      ]);
+
+      return {
+        items: items
+          .map((item) => validate(postSchema, item).unwrapOr(null))
+          .filter((item) => item !== null),
+        count: Number(countResult[0].count),
+      };
+    } catch (error) {
+      return err(new RepositoryError("Failed to list posts", error));
+    }
   }
 }
 ```
@@ -149,7 +156,7 @@ export class DrizzleSqlitePostRepository implements PostRepository {
 // src/core/application/post/createPost.ts
 
 import { z } from "zod/v4";
-import { ResultAsync } from "neverthrow";
+import { Result } from "neverthrow";
 import { validate } from "@/lib/validation.ts";
 import type { PostRepository } from "@/domain/post/ports/postRepository";
 import type { Context } from "../context";
@@ -162,10 +169,21 @@ export type CreatePostInput = z.infer<typeof createPostInputSchema>;
 export async function createPost(
   context: Context,
   input: CreatePostInput
-): ResultAsync<Post, RepositoryError> {
-  return validate(createPostInputSchema, input)
-    .asyncAndThen((input) => context.postRepository.create(input).mapErr(error => new ApplicationError("Failed to create post", error)))
-    .mapErr((error) => new ApplicationError("createPost", "Failed to create a new post", error));
+): Promise<Result<Post, RepositoryError>> {
+  const parseResult = validate(createPostInputSchema, input).mapErr(
+    (error) => new ApplicationError("Invalid post input", error)
+  );
+
+  return parseResult.match({
+    ok: (params) => {
+      return context.postRepository.create(params).mapErr(
+        (error) => new ApplicationError("Failed to create post", error)
+      );
+    },
+    err: (error) => {
+      return err(new ApplicationError("Invalid post input", error));
+    },
+  });
 }
 ```
 
@@ -199,7 +217,7 @@ Next.js 15.2.1 application code using:
 
 ## Error Handling
 
-- All backend functions return `Result<T, E>` or `ResultAsync<T, E>` types using `neverthrow`
+- All backend functions return `Result<T, E>` or `Promise<Result<T, E>>` types using `neverthrow`
 - Each modules has its own error types, e.g. `RepositoryError`, `ApplicationError`. Error types should extend a base `AnyError` class (`src/lib/errors.ts`)
 
 ## Testing
