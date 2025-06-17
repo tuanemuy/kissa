@@ -17,7 +17,7 @@ import { validate } from "@/lib/validation";
 import { and, asc, desc, eq, like, or, sql } from "drizzle-orm";
 import { type Result, err, ok } from "neverthrow";
 import { v7 as uuidv7 } from "uuid";
-import type { Database } from "./database";
+import type { Database } from "./client";
 import { checkIns, favorites, locations, regions } from "./schema";
 
 export class DrizzleTursoRegionRepository implements RegionRepository {
