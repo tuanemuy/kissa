@@ -21,8 +21,8 @@
             nodejs_22
             pnpm
             vtsls
-            biome
             tailwindcss-language-server
+            biome
             jdk17
             alloy6
             tlaplus
