@@ -1,6 +1,6 @@
-import type { z } from "zod/v4";
-import { type Result, ResultAsync, ok, err } from "neverthrow";
-import { AnyError } from "./error.ts";
+import { type Result, ResultAsync, err, ok } from "neverthrow";
+import type { z } from "zod";
+import { AnyError } from "./error";
 
 export class ValidationError<T> extends AnyError {
   override readonly name = "ValidationError";
@@ -31,19 +31,4 @@ export function validate<T extends z.ZodType>(
   }
 
   return ok(result.data);
-}
-
-export function validateAsync<T extends z.ZodType>(
-  schema: T,
-  data: unknown,
-): ResultAsync<z.infer<T>, ValidationError<z.infer<T>>> {
-  return ResultAsync.fromPromise(
-    schema.parseAsync(data),
-    (error) =>
-      new ValidationError(
-        error as z.ZodError<z.infer<T>>,
-        "Validation error occurred",
-        error,
-      ),
-  );
 }

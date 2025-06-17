@@ -27,3 +27,35 @@ export function fromUnknown(error: unknown): AnyError {
 
   return new AnyError("Unknown error occurred", error);
 }
+
+export class RepositoryError extends AnyError {
+  override readonly name = "RepositoryError";
+}
+
+export class ApplicationError extends AnyError {
+  override readonly name = "ApplicationError";
+}
+
+export class ValidationError extends AnyError {
+  override readonly name = "ValidationError";
+}
+
+export class AuthenticationError extends AnyError {
+  override readonly name = "AuthenticationError";
+}
+
+export class AuthorizationError extends AnyError {
+  override readonly name = "AuthorizationError";
+}
+
+export class NotFoundError extends AnyError {
+  override readonly name = "NotFoundError";
+}
+
+export class ConflictError extends AnyError {
+  override readonly name = "ConflictError";
+}
+
+export class RateLimitError extends AnyError {
+  override readonly name = "RateLimitError";
+}
