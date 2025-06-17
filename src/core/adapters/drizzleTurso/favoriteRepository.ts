@@ -184,7 +184,7 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
       ]);
 
       const validatedItems = items
-        .map((item: any) =>
+        .map((item) =>
           validate(favoriteSchema, {
             ...item,
             createdAt: new Date(item.createdAt),
@@ -244,13 +244,13 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
       ]);
 
       const validatedItems = items
-        .map((item: any) =>
+        .map((item) =>
           validate(favoriteWithRegionSchema, {
             ...item,
             createdAt: new Date(item.createdAt),
           }).unwrapOr(null),
         )
-        .filter((item): item is any => item !== null);
+        .filter((item): item is FavoriteWithRegion => item !== null);
 
       return ok({
         items: validatedItems,
@@ -306,13 +306,13 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
       ]);
 
       const validatedItems = items
-        .map((item: any) =>
+        .map((item) =>
           validate(favoriteWithLocationSchema, {
             ...item,
             createdAt: new Date(item.createdAt),
           }).unwrapOr(null),
         )
-        .filter((item): item is any => item !== null);
+        .filter((item): item is FavoriteWithLocation => item !== null);
 
       return ok({
         items: validatedItems,
@@ -432,13 +432,13 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
         .orderBy(pinnedRegions.order);
 
       const validatedItems = items
-        .map((item: any) =>
+        .map((item) =>
           validate(pinnedRegionSchema, {
             ...item,
             createdAt: new Date(item.createdAt),
           }).unwrapOr(null),
         )
-        .filter((item): item is any => item !== null);
+        .filter((item): item is PinnedRegion => item !== null);
 
       return ok(validatedItems);
     } catch (error) {
@@ -470,13 +470,13 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
         .orderBy(pinnedRegions.order);
 
       const validatedItems = items
-        .map((item: any) =>
+        .map((item) =>
           validate(pinnedRegionWithDetailsSchema, {
             ...item,
             createdAt: new Date(item.createdAt),
           }).unwrapOr(null),
         )
-        .filter((item): item is any => item !== null);
+        .filter((item): item is PinnedRegionWithDetails => item !== null);
 
       return ok(validatedItems);
     } catch (error) {

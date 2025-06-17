@@ -6,6 +6,11 @@ import { DrizzleTursoLocationRepository } from "@/core/adapters/drizzleTurso/loc
 import { DrizzleTursoRegionRepository } from "@/core/adapters/drizzleTurso/regionRepository";
 import { DrizzleTursoUserRepository } from "@/core/adapters/drizzleTurso/userRepository";
 import type { Context } from "@/core/application/context";
+import type { BillingRepository } from "@/core/domain/billing/ports/billingRepository";
+import type { ModerationRepository } from "@/core/domain/moderation/ports/moderationRepository";
+import type { NotificationRepository } from "@/core/domain/notification/ports/notificationRepository";
+import type { NotificationService } from "@/core/domain/notification/ports/notificationService";
+import type { PaymentGateway } from "@/core/domain/billing/ports/paymentGateway";
 import { z } from "zod/v4";
 
 // Environment variables schema for actions
@@ -57,11 +62,11 @@ export function getContext(): Context {
     checkInRepository: new DrizzleTursoCheckInRepository(db),
     // TODO: Implement these repositories when needed
     favoriteRepository: new DrizzleTursoFavoriteRepository(db),
-    moderationRepository: {} as any,
-    notificationRepository: {} as any,
-    notificationService: {} as any,
-    billingRepository: {} as any,
-    paymentGateway: {} as any,
+    moderationRepository: {} as ModerationRepository,
+    notificationRepository: {} as NotificationRepository,
+    notificationService: {} as NotificationService,
+    billingRepository: {} as BillingRepository,
+    paymentGateway: {} as PaymentGateway,
   };
 
   return cachedContext;

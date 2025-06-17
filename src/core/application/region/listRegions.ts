@@ -12,6 +12,7 @@ import type {
   Region,
   RegionWithStats,
 } from "@/core/domain/region/types";
+import type { UserId } from "@/core/domain/user/types";
 
 import type { Context } from "../context";
 
@@ -47,7 +48,7 @@ export async function listRegions(
     filter: parseResult.value.filter
       ? {
           ...parseResult.value.filter,
-          creatorId: parseResult.value.filter.creatorId as any,
+          creatorId: parseResult.value.filter.creatorId as UserId | undefined,
         }
       : undefined,
   };
@@ -76,7 +77,7 @@ export async function listRegionsWithStats(
     filter: parseResult.value.filter
       ? {
           ...parseResult.value.filter,
-          creatorId: parseResult.value.filter.creatorId as any,
+          creatorId: parseResult.value.filter.creatorId as UserId | undefined,
         }
       : undefined,
   };

@@ -75,7 +75,7 @@ export async function discoverLocations(
     ...parseResult.value,
     filter: {
       ...parseResult.value.filter,
-      regionId: parseResult.value.filter?.regionId as any,
+      regionId: parseResult.value.filter?.regionId as RegionId | undefined,
       isPublic: true, // Force public visibility for discovery
     },
   };
