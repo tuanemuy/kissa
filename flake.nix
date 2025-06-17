@@ -23,6 +23,9 @@
             vtsls
             biome
             tailwindcss-language-server
+            jdk17
+            alloy6
+            tlaplus
           ];
         };
       });

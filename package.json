@@ -1,0 +1,31 @@
+{
+  "name": "kissa",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "alloy": "alloy6 exec -f ./spec/structure.als",
+    "tlc": "timeout 30 tlc -config ./spec/behavior.cfg ./spec/behavior.tla"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next": "15.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
+  },
+  "packageManager": "pnpm@10.12.1"
+}
