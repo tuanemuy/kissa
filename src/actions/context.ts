@@ -1,6 +1,7 @@
 import { BcryptPasswordHasher } from "@/core/adapters/bcrypt/passwordHasher";
 import { DrizzleTursoCheckInRepository } from "@/core/adapters/drizzleTurso/checkInRepository";
 import { getDatabase } from "@/core/adapters/drizzleTurso/client";
+import { DrizzleTursoFavoriteRepository } from "@/core/adapters/drizzleTurso/favoriteRepository";
 import { DrizzleTursoLocationRepository } from "@/core/adapters/drizzleTurso/locationRepository";
 import { DrizzleTursoRegionRepository } from "@/core/adapters/drizzleTurso/regionRepository";
 import { DrizzleTursoUserRepository } from "@/core/adapters/drizzleTurso/userRepository";
@@ -55,7 +56,7 @@ export function getContext(): Context {
     locationRepository: new DrizzleTursoLocationRepository(db),
     checkInRepository: new DrizzleTursoCheckInRepository(db),
     // TODO: Implement these repositories when needed
-    favoriteRepository: {} as any,
+    favoriteRepository: new DrizzleTursoFavoriteRepository(db),
     moderationRepository: {} as any,
     notificationRepository: {} as any,
     notificationService: {} as any,
