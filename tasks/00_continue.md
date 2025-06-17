@@ -2,6 +2,7 @@
 
 ## 背景
 
+- `CLAUDE.md` にガイダンスを記載した
 - `docs/requirements.md` に要件を定義した
 - `spec/*` に仕様をモデル化した
 - `docs/progress.md` に進捗を記録している
