@@ -2,6 +2,9 @@ import { z } from "zod/v4";
 import { regionIdSchema } from "../region/types";
 import { userIdSchema } from "../user/types";
 
+// Re-export for convenience
+export { regionIdSchema };
+
 // Branded types
 export const locationIdSchema = z.string().uuid().brand("LocationId");
 export type LocationId = z.infer<typeof locationIdSchema>;
