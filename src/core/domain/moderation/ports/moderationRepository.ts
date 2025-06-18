@@ -16,7 +16,7 @@ export interface ModerationRepository {
     id: ModerationItemId,
   ): Promise<Result<ModerationItem | null, RepositoryError>>;
   findByContent(
-    contentType: string,
+    contentType: "region" | "location" | "checkIn",
     contentId: string,
   ): Promise<Result<ModerationItem | null, RepositoryError>>;
   moderate(

@@ -1,7 +1,7 @@
 import type { ValidationError } from "@/lib/error";
 import { validate } from "@/lib/validation";
 import type { Result } from "neverthrow";
-import type { z } from "zod/v4";
+import { z } from "zod/v4";
 
 /**
  * Safely extracts a string field from FormData
@@ -52,4 +52,15 @@ export function parseFormData<T extends z.ZodType>(
   }
 
   return validate(schema, data);
+}
+
+/**
+ * Safely extracts and validates FormData fields using a Zod object schema
+ */
+export function parseFormDataObject<T extends Record<string, z.ZodType>>(
+  formData: FormData,
+  fields: T,
+): Result<Record<string, unknown>, ValidationError> {
+  const schema = z.object(fields);
+  return parseFormData(formData, schema);
 }

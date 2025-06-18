@@ -80,7 +80,7 @@ export class DrizzleTursoModerationRepository implements ModerationRepository {
   }
 
   async findByContent(
-    contentType: string,
+    contentType: "region" | "location" | "checkIn",
     contentId: string,
   ): Promise<Result<ModerationItem | null, RepositoryError>> {
     try {
@@ -89,7 +89,7 @@ export class DrizzleTursoModerationRepository implements ModerationRepository {
         .from(moderationItems)
         .where(
           and(
-            eq(moderationItems.contentType, contentType as any),
+            eq(moderationItems.contentType, contentType),
             eq(moderationItems.contentId, contentId),
           ),
         )
