@@ -1,5 +1,6 @@
 "use server";
 
+import { getModerationItem } from "@/core/application/moderation/getModerationItem";
 import { getModerationStats } from "@/core/application/moderation/getModerationStats";
 import { listModerationItems } from "@/core/application/moderation/listModerationItems";
 import { moderateContent } from "@/core/application/moderation/moderateContent";
@@ -150,6 +151,33 @@ export async function getModerationStatistics() {
 
   if (result.isErr()) {
     throw new Error(`Failed to get moderation stats: ${result.error.message}`);
+  }
+
+  return result.value;
+}
+
+// TODO: This function should check if the authenticated user has permission to view moderation item details
+export async function getModerationItemDetail(id: string) {
+  const context = await getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  // Validate ID
+  const idResult = moderationItemIdSchema.safeParse(id);
+  if (!idResult.success) {
+    throw new Error("Invalid moderation item ID");
+  }
+
+  const result = await getModerationItem(
+    context,
+    idResult.data as ModerationItemId,
+  );
+
+  if (result.isErr()) {
+    throw new Error(`Failed to get moderation item: ${result.error.message}`);
   }
 
   return result.value;
