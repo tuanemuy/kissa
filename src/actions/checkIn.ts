@@ -4,7 +4,6 @@ import { createCheckIn } from "@/core/application/checkIn/createCheckIn";
 import { deleteCheckIn } from "@/core/application/checkIn/deleteCheckIn";
 import { updateCheckIn } from "@/core/application/checkIn/updateCheckIn";
 import type { CheckInId } from "@/core/domain/checkIn/types";
-import { requireAuth } from "@/lib/auth";
 import { getFormDataFile, getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { redirect } from "next/navigation";
@@ -37,7 +36,11 @@ const deleteCheckInSchema = z.object({
 export async function createCheckInAction(formData: FormData) {
   const context = getContext();
 
-  const userId = await requireAuth();
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     userId,
@@ -66,7 +69,11 @@ export async function createCheckInAction(formData: FormData) {
 export async function updateCheckInAction(formData: FormData) {
   const context = getContext();
 
-  const userId = await requireAuth();
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     id: getFormDataString(formData, "id"),
@@ -102,7 +109,11 @@ export async function updateCheckInAction(formData: FormData) {
 export async function deleteCheckInAction(formData: FormData) {
   const context = getContext();
 
-  const userId = await requireAuth();
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     id: getFormDataString(formData, "id"),

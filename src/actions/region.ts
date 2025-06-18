@@ -3,7 +3,6 @@
 import { createRegion } from "@/core/application/region/createRegion";
 import { deleteRegion } from "@/core/application/region/deleteRegion";
 import { updateRegion } from "@/core/application/region/updateRegion";
-import { requireAuth } from "@/lib/auth";
 import { getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
@@ -51,8 +50,12 @@ export async function createRegionAction(formData: FormData) {
 
   const params = validationResult.value;
 
-  const userId = await requireAuth();
-  const result = await createRegion(context, userId, params);
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const result = await createRegion(context, userIdResult.value, params);
 
   if (result.isErr()) {
     throw new Error(result.error.message);
@@ -65,7 +68,11 @@ export async function createRegionAction(formData: FormData) {
 export async function updateRegionAction(formData: FormData) {
   const context = getContext();
 
-  const userId = await requireAuth();
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     id: getFormDataString(formData, "id"),
@@ -96,7 +103,11 @@ export async function updateRegionAction(formData: FormData) {
 export async function deleteRegionAction(formData: FormData) {
   const context = getContext();
 
-  const userId = await requireAuth();
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     id: getFormDataString(formData, "id"),

@@ -6,10 +6,7 @@ import { deleteLocation as deleteLocationService } from "@/core/application/loca
 import { updateLocation as updateLocationService } from "@/core/application/location/updateLocation";
 import { updateLocationInputSchema } from "@/core/application/location/updateLocation";
 import { locationIdSchema, regionIdSchema } from "@/core/domain/location/types";
-import { userIdSchema } from "@/core/domain/user/types";
-import { auth } from "@/lib/auth";
 import { parseFormData } from "@/lib/formData";
-import { validate } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
@@ -21,14 +18,11 @@ const createLocationFormSchema = createLocationInputSchema.extend({
 });
 
 export async function createLocationAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/auth/login");
-  }
-
-  const userIdResult = validate(userIdSchema, session.user.id);
+  const context = getContext();
+  
+  const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
-    throw new Error("Invalid user ID");
+    throw new Error(userIdResult.error.message);
   }
 
   // Parse and validate FormData with schema
@@ -39,7 +33,6 @@ export async function createLocationAction(formData: FormData) {
 
   const { regionId, ...locationInput } = formResult.value;
 
-  const context = getContext();
   const result = await createLocationService(
     context,
     userIdResult.value,
@@ -61,14 +54,11 @@ const updateLocationFormSchema = updateLocationInputSchema.extend({
 });
 
 export async function updateLocationAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/auth/login");
-  }
-
-  const userIdResult = validate(userIdSchema, session.user.id);
+  const context = getContext();
+  
+  const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
-    throw new Error("Invalid user ID");
+    throw new Error(userIdResult.error.message);
   }
 
   // Parse and validate FormData with schema
@@ -79,7 +69,6 @@ export async function updateLocationAction(formData: FormData) {
 
   const { locationId, ...locationInput } = formResult.value;
 
-  const context = getContext();
   const result = await updateLocationService(
     context,
     userIdResult.value,
@@ -102,14 +91,11 @@ const deleteLocationFormSchema = z.object({
 });
 
 export async function deleteLocationAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/auth/login");
-  }
-
-  const userIdResult = validate(userIdSchema, session.user.id);
+  const context = getContext();
+  
+  const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
-    throw new Error("Invalid user ID");
+    throw new Error(userIdResult.error.message);
   }
 
   // Parse and validate FormData with schema
@@ -120,7 +106,6 @@ export async function deleteLocationAction(formData: FormData) {
 
   const { locationId, regionId } = formResult.value;
 
-  const context = getContext();
   const result = await deleteLocationService(
     context,
     userIdResult.value,
