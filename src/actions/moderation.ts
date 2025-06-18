@@ -19,10 +19,15 @@ import { getContext } from "./context";
 export async function reportContentAction(formData: FormData) {
   const context = await getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const reportedBy = userIdResult.value;
+
   const inputResult = parseFormDataObject(formData, {
     contentType: z.string(),
     contentId: z.string().uuid(),
-    reportedBy: userIdSchema.optional(),
     reportReason: z.string().max(500).optional(),
   });
 
@@ -38,11 +43,11 @@ export async function reportContentAction(formData: FormData) {
     throw new Error("Invalid content type");
   }
 
-  const { contentId, reportedBy, reportReason } = restData;
+  const { contentId, reportReason } = restData;
   const result = await reportContent(context, {
     contentType: contentTypeResult.data,
     contentId: contentId as string,
-    reportedBy: reportedBy as UserId | undefined,
+    reportedBy,
     reportReason: reportReason as string | undefined,
   });
 
@@ -53,13 +58,19 @@ export async function reportContentAction(formData: FormData) {
   redirect("/dashboard/moderation");
 }
 
+// TODO: This function should check if the authenticated user has moderation permissions
 export async function moderateContentAction(formData: FormData) {
   const context = await getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const moderatedBy = userIdResult.value;
 
   const inputResult = parseFormDataObject(formData, {
     id: moderationItemIdSchema,
     status: z.enum(["approved", "rejected"]),
-    moderatedBy: userIdSchema,
     moderationNote: z.string().max(500).optional(),
   });
 
@@ -67,11 +78,11 @@ export async function moderateContentAction(formData: FormData) {
     throw new Error(`Invalid form data: ${inputResult.error.message}`);
   }
 
-  const { id, status, moderatedBy, moderationNote } = inputResult.value;
+  const { id, status, moderationNote } = inputResult.value;
   const result = await moderateContent(context, {
     id: id as ModerationItemId,
     status: status as "approved" | "rejected",
-    moderatedBy: moderatedBy as UserId,
+    moderatedBy,
     moderationNote: moderationNote as string | undefined,
   });
 
@@ -82,6 +93,7 @@ export async function moderateContentAction(formData: FormData) {
   redirect("/dashboard/moderation");
 }
 
+// TODO: This function should check if the authenticated user has permission to view moderation items
 export async function getModerationItemsList(
   page = 1,
   limit = 20,
@@ -89,6 +101,11 @@ export async function getModerationItemsList(
   contentType?: string,
 ) {
   const context = await getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
 
   const filter: {
     status?: typeof moderationStatusSchema._output;
@@ -120,8 +137,14 @@ export async function getModerationItemsList(
   return result.value;
 }
 
+// TODO: This function should check if the authenticated user has permission to view moderation statistics
 export async function getModerationStatistics() {
   const context = await getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
 
   const result = await getModerationStats(context);
 

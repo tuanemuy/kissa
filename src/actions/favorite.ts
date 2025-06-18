@@ -33,6 +33,12 @@ const reorderPinnedRegionsSchema = z.object({
 export async function addFavoriteAction(formData: FormData) {
   const context = getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const input = {
     targetId: getFormDataString(formData, "targetId"),
     targetType: getFormDataString(formData, "targetType") as
@@ -51,6 +57,7 @@ export async function addFavoriteAction(formData: FormData) {
     action: "add",
     targetId: params.targetId,
     targetType: params.targetType,
+    userId,
   });
 
   if (result.isErr()) {
@@ -70,6 +77,12 @@ export async function addFavoriteAction(formData: FormData) {
 export async function removeFavoriteAction(formData: FormData) {
   const context = getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const input = {
     targetId: getFormDataString(formData, "targetId"),
     targetType: getFormDataString(formData, "targetType") as
@@ -88,6 +101,7 @@ export async function removeFavoriteAction(formData: FormData) {
     action: "remove",
     targetId: params.targetId,
     targetType: params.targetType,
+    userId,
   });
 
   if (result.isErr()) {
@@ -107,6 +121,12 @@ export async function removeFavoriteAction(formData: FormData) {
 export async function pinRegionAction(formData: FormData) {
   const context = getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const input = {
     regionId: getFormDataString(formData, "regionId"),
   };
@@ -121,6 +141,7 @@ export async function pinRegionAction(formData: FormData) {
   const result = await managePinnedRegions(context, {
     action: "pin",
     regionId: params.regionId,
+    userId,
   });
 
   if (result.isErr()) {
@@ -133,6 +154,12 @@ export async function pinRegionAction(formData: FormData) {
 
 export async function unpinRegionAction(formData: FormData) {
   const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const input = {
     regionId: getFormDataString(formData, "regionId"),
@@ -148,6 +175,7 @@ export async function unpinRegionAction(formData: FormData) {
   const result = await managePinnedRegions(context, {
     action: "unpin",
     regionId: params.regionId,
+    userId,
   });
 
   if (result.isErr()) {
@@ -160,6 +188,12 @@ export async function unpinRegionAction(formData: FormData) {
 
 export async function reorderPinnedRegionsAction(formData: FormData) {
   const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
 
   const regionIdsString = getFormDataString(formData, "regionIds");
   const regionIds = regionIdsString ? JSON.parse(regionIdsString) : [];
@@ -178,6 +212,7 @@ export async function reorderPinnedRegionsAction(formData: FormData) {
   const result = await managePinnedRegions(context, {
     action: "reorder",
     regionIds: params.regionIds,
+    userId,
   });
 
   if (result.isErr()) {

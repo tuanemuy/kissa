@@ -19,8 +19,13 @@ import { getContext } from "./context";
 export async function changeUserSubscription(formData: FormData) {
   const context = await getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const inputResult = parseFormDataObject(formData, {
-    userId: userIdSchema,
     newPlan: subscriptionPlanSchema,
   });
 
@@ -28,7 +33,7 @@ export async function changeUserSubscription(formData: FormData) {
     throw new Error(`Invalid form data: ${inputResult.error.message}`);
   }
 
-  const { userId, newPlan } = inputResult.value;
+  const { newPlan } = inputResult.value;
   const result = await changeSubscription(context, { userId, newPlan } as {
     userId: UserId;
     newPlan: SubscriptionPlan;
@@ -44,8 +49,13 @@ export async function changeUserSubscription(formData: FormData) {
 export async function cancelUserSubscription(formData: FormData) {
   const context = await getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const inputResult = parseFormDataObject(formData, {
-    userId: userIdSchema,
     cancelAtPeriodEnd: z.boolean().default(true),
   });
 
@@ -53,7 +63,7 @@ export async function cancelUserSubscription(formData: FormData) {
     throw new Error(`Invalid form data: ${inputResult.error.message}`);
   }
 
-  const { userId, cancelAtPeriodEnd } = inputResult.value;
+  const { cancelAtPeriodEnd } = inputResult.value;
   const result = await cancelSubscription(context, {
     userId,
     cancelAtPeriodEnd,
@@ -69,20 +79,17 @@ export async function cancelUserSubscription(formData: FormData) {
   redirect("/dashboard/billing");
 }
 
-export async function getUserBillingHistory(
-  userId: string,
-  page = 1,
-  limit = 20,
-) {
+export async function getUserBillingHistory(page = 1, limit = 20) {
   const context = await getContext();
 
-  const parseResult = userIdSchema.safeParse(userId);
-  if (!parseResult.success) {
-    throw new Error("Invalid user ID");
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
   }
+  const userId = userIdResult.value;
 
   const result = await getBillingHistory(context, {
-    userId: parseResult.data,
+    userId,
     pagination: { page, limit },
     filter: {},
   });
@@ -94,16 +101,17 @@ export async function getUserBillingHistory(
   return result.value;
 }
 
-export async function getUserSubscriptionStatus(userId: string) {
+export async function getUserSubscriptionStatus() {
   const context = await getContext();
 
-  const parseResult = userIdSchema.safeParse(userId);
-  if (!parseResult.success) {
-    throw new Error("Invalid user ID");
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
   }
+  const userId = userIdResult.value;
 
   const result = await getSubscriptionStatus(context, {
-    userId: parseResult.data,
+    userId,
   });
 
   if (result.isErr()) {

@@ -18,6 +18,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { getContext } from "./context";
 
+// TODO: This function should check if the authenticated user has permission to create notifications for other users
 export async function createUserNotification(formData: FormData) {
   const context = await getContext();
 
@@ -59,6 +60,7 @@ export async function createUserNotification(formData: FormData) {
   redirect("/dashboard/notifications");
 }
 
+// TODO: This function should check if the authenticated user has permission to send notifications to other users
 export async function sendUserNotification(formData: FormData) {
   const context = await getContext();
 
@@ -107,6 +109,12 @@ export async function sendUserNotification(formData: FormData) {
 export async function markNotificationRead(formData: FormData) {
   const context = await getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const inputResult = parseFormDataObject(formData, {
     id: notificationIdSchema,
   });
@@ -116,6 +124,20 @@ export async function markNotificationRead(formData: FormData) {
   }
 
   const { id } = inputResult.value;
+
+  // Verify notification belongs to the authenticated user
+  const notificationResult = await context.notificationRepository.findById(
+    id as NotificationId,
+  );
+  if (notificationResult.isErr()) {
+    throw new Error(
+      `Failed to find notification: ${notificationResult.error.message}`,
+    );
+  }
+  if (!notificationResult.value || notificationResult.value.userId !== userId) {
+    throw new Error("Notification not found or unauthorized");
+  }
+
   const result = await markNotificationAsRead(context, {
     id: id as NotificationId,
   });
@@ -130,15 +152,12 @@ export async function markNotificationRead(formData: FormData) {
 export async function markAllNotificationsRead(formData: FormData) {
   const context = await getContext();
 
-  const inputResult = parseFormDataObject(formData, {
-    userId: userIdSchema,
-  });
-
-  if (inputResult.isErr()) {
-    throw new Error(`Invalid form data: ${inputResult.error.message}`);
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
   }
+  const userId = userIdResult.value;
 
-  const { userId } = inputResult.value;
   const result = await markAllNotificationsAsRead(context, {
     userId: userId as UserId,
   });
@@ -152,20 +171,17 @@ export async function markAllNotificationsRead(formData: FormData) {
   redirect("/dashboard/notifications");
 }
 
-export async function getUserNotifications(
-  userId: string,
-  page = 1,
-  limit = 20,
-) {
+export async function getUserNotifications(page = 1, limit = 20) {
   const context = await getContext();
 
-  const parseResult = userIdSchema.safeParse(userId);
-  if (!parseResult.success) {
-    throw new Error("Invalid user ID");
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
   }
+  const userId = userIdResult.value;
 
   const result = await listNotifications(context, {
-    userId: parseResult.data,
+    userId,
     pagination: { page, limit },
   });
 
@@ -179,8 +195,13 @@ export async function getUserNotifications(
 export async function cleanupUserNotifications(formData: FormData) {
   const context = await getContext();
 
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
   const inputResult = parseFormDataObject(formData, {
-    userId: userIdSchema,
     days: z.number().positive().default(30),
   });
 
@@ -188,7 +209,7 @@ export async function cleanupUserNotifications(formData: FormData) {
     throw new Error(`Invalid form data: ${inputResult.error.message}`);
   }
 
-  const { userId, days } = inputResult.value;
+  const { days } = inputResult.value;
   const result = await cleanupOldNotifications(context, {
     userId: userId as UserId,
     days: days as number,
