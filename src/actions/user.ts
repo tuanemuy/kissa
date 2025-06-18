@@ -4,6 +4,7 @@ import { authenticateUser as authenticateUserService } from "@/core/application/
 import { authenticateUserInputSchema } from "@/core/application/user/authenticateUser";
 import { createUser as createUserService } from "@/core/application/user/createUser";
 import { createUserInputSchema } from "@/core/application/user/createUser";
+import { clearSession, setSession } from "@/lib/auth";
 import { parseFormData } from "@/lib/formData";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -41,9 +42,15 @@ export async function loginUserAction(formData: FormData) {
     throw new Error(result.error.message);
   }
 
-  // Set session cookie or handle session storage
-  // This would typically integrate with NextAuth.js or similar
+  // Set session cookie
+  await setSession(result.value.user.id);
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+export async function logoutUserAction() {
+  await clearSession();
+  revalidatePath("/");
+  redirect("/");
 }
