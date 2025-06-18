@@ -2,6 +2,8 @@
 
 import { createRegion } from "@/core/application/region/createRegion";
 import { deleteRegion } from "@/core/application/region/deleteRegion";
+import { getRegion } from "@/core/application/region/getRegion";
+import { listRegions } from "@/core/application/region/listRegions";
 import { updateRegion } from "@/core/application/region/updateRegion";
 import { getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
@@ -129,4 +131,38 @@ export async function deleteRegionAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+export async function listRegionsAction() {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+  const userId = userIdResult.value;
+
+  const result = await listRegions(context, {
+    pagination: { page: 1, limit: 20 },
+    filter: { creatorId: userId },
+    sort: { field: "updatedAt", order: "desc" },
+  });
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+export async function getRegionAction(regionId: string) {
+  const context = getContext();
+
+  const result = await getRegion(context, { id: regionId });
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
 }
