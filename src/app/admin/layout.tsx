@@ -52,24 +52,14 @@ async function AdminNavigation({ children }: { children: React.ReactNode }) {
               </Link>
             </Button>
 
-            <Button
-              asChild
-              variant="ghost"
-              className="w-full justify-start"
-              disabled
-            >
+            <Button asChild variant="ghost" className="w-full justify-start">
               <Link href="/admin/users">
                 <Users className="mr-2 h-4 w-4" />
                 ユーザー管理
               </Link>
             </Button>
 
-            <Button
-              asChild
-              variant="ghost"
-              className="w-full justify-start"
-              disabled
-            >
+            <Button asChild variant="ghost" className="w-full justify-start">
               <Link href="/admin/analytics">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 統計
