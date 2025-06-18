@@ -143,8 +143,8 @@ async function SubscriptionStatus() {
         <div>
           <p className="text-sm font-medium mb-2">プランの機能</p>
           <ul className="text-sm space-y-1">
-            {getPlanFeatures(subscriptionStatus.plan).map((feature, index) => (
-              <li key={index} className="flex items-center gap-2">
+            {getPlanFeatures(subscriptionStatus.plan).map((feature) => (
+              <li key={feature} className="flex items-center gap-2">
                 <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                 {feature}
               </li>
@@ -216,8 +216,8 @@ async function PlanUpgrade() {
                     (feature) =>
                       !getPlanFeatures(currentPlan).includes(feature),
                   )
-                  .map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
+                  .map((feature) => (
+                    <li key={feature} className="flex items-center gap-2">
                       <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
                       {feature}
                     </li>
@@ -348,8 +348,8 @@ async function CancelSubscription() {
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
-      {[...Array(4)].map((_, i) => (
-        <Card key={i}>
+      {Array.from({ length: 4 }, (_, i) => (
+        <Card key={`loading-${i + 1}`}>
           <CardHeader>
             <Skeleton className="h-6 w-32" />
           </CardHeader>

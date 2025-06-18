@@ -183,8 +183,8 @@ async function ProfileInfo() {
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
-      {[...Array(3)].map((_, i) => (
-        <Card key={i}>
+      {Array.from({ length: 3 }, (_, i) => (
+        <Card key={`profile-${i + 1}`}>
           <CardHeader>
             <Skeleton className="h-6 w-32" />
           </CardHeader>

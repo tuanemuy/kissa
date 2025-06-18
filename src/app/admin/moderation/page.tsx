@@ -229,8 +229,8 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
+        {Array.from({ length: 4 }, (_, i) => (
+          <Card key={`mod-stats-${i + 1}`}>
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-20" />
             </CardHeader>
@@ -247,8 +247,8 @@ function LoadingSkeleton() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={`mod-list-${i + 1}`} className="h-12 w-full" />
             ))}
           </div>
         </CardContent>

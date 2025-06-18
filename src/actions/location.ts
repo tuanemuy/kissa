@@ -1,10 +1,18 @@
 "use server";
 
+import { acceptLocationInvitation as acceptLocationInvitationService } from "@/core/application/location/acceptLocationInvitation";
+import { acceptLocationInvitationInputSchema } from "@/core/application/location/acceptLocationInvitation";
 import { createLocation as createLocationService } from "@/core/application/location/createLocation";
 import { createLocationInputSchema } from "@/core/application/location/createLocation";
 import { deleteLocation as deleteLocationService } from "@/core/application/location/deleteLocation";
 import { getLocation as getLocationService } from "@/core/application/location/getLocation";
+import { inviteLocationEditor as inviteLocationEditorService } from "@/core/application/location/inviteLocationEditor";
+import { inviteLocationEditorInputSchema } from "@/core/application/location/inviteLocationEditor";
+import { listLocationEditors as listLocationEditorsService } from "@/core/application/location/listLocationEditors";
+import { listLocationEditorsInputSchema } from "@/core/application/location/listLocationEditors";
 import { listLocations as listLocationsService } from "@/core/application/location/listLocations";
+import { removeLocationEditor as removeLocationEditorService } from "@/core/application/location/removeLocationEditor";
+import { removeLocationEditorInputSchema } from "@/core/application/location/removeLocationEditor";
 import { updateLocation as updateLocationService } from "@/core/application/location/updateLocation";
 import { updateLocationInputSchema } from "@/core/application/location/updateLocation";
 import { locationIdSchema, regionIdSchema } from "@/core/domain/location/types";
@@ -179,6 +187,119 @@ export async function listLocationsAction(
     },
     userIdResult.value,
   );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+// Editor invitation actions
+
+export async function inviteLocationEditorAction(formData: FormData) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  // Parse and validate FormData with schema
+  const formResult = parseFormData(formData, inviteLocationEditorInputSchema);
+  if (formResult.isErr()) {
+    throw new Error(`Invalid input: ${formResult.error.message}`);
+  }
+
+  const result = await inviteLocationEditorService(
+    context,
+    userIdResult.value,
+    formResult.value,
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath(`/locations/${formResult.value.locationId}/editors`);
+  return result.value;
+}
+
+export async function acceptLocationInvitationAction(formData: FormData) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  // Parse and validate FormData with schema
+  const formResult = parseFormData(
+    formData,
+    acceptLocationInvitationInputSchema,
+  );
+  if (formResult.isErr()) {
+    throw new Error(`Invalid input: ${formResult.error.message}`);
+  }
+
+  const result = await acceptLocationInvitationService(
+    context,
+    userIdResult.value,
+    formResult.value,
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath("/profile/invitations");
+  return result.value;
+}
+
+export async function removeLocationEditorAction(formData: FormData) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  // Parse and validate FormData with schema
+  const formResult = parseFormData(formData, removeLocationEditorInputSchema);
+  if (formResult.isErr()) {
+    throw new Error(`Invalid input: ${formResult.error.message}`);
+  }
+
+  const result = await removeLocationEditorService(
+    context,
+    userIdResult.value,
+    formResult.value,
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath(`/locations/${formResult.value.locationId}/editors`);
+  return result.value;
+}
+
+export async function listLocationEditorsAction(locationId: string) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const validatedLocationId = locationIdSchema.safeParse(locationId);
+  if (!validatedLocationId.success) {
+    throw new Error("Invalid location ID");
+  }
+
+  const result = await listLocationEditorsService(context, userIdResult.value, {
+    locationId: validatedLocationId.data,
+  });
 
   if (result.isErr()) {
     throw new Error(result.error.message);

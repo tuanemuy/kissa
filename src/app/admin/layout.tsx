@@ -134,7 +134,7 @@ export default function AdminLayout({ children }: Props) {
       fallback={
         <div className="flex h-screen items-center justify-center">
           <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900 mx-auto mb-4" />
             <p>読み込み中...</p>
           </div>
         </div>
