@@ -56,3 +56,14 @@ export async function logoutUserAction() {
   revalidatePath("/");
   redirect("/");
 }
+
+export async function getSessionUser() {
+  const context = getContext();
+  const result = await context.authService.getCurrentUser();
+
+  if (result.isErr()) {
+    return null;
+  }
+
+  return result.value;
+}
