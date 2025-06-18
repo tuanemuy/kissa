@@ -19,7 +19,7 @@ const createLocationFormSchema = createLocationInputSchema.extend({
 
 export async function createLocationAction(formData: FormData) {
   const context = getContext();
-  
+
   const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
     throw new Error(userIdResult.error.message);
@@ -55,7 +55,7 @@ const updateLocationFormSchema = updateLocationInputSchema.extend({
 
 export async function updateLocationAction(formData: FormData) {
   const context = getContext();
-  
+
   const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
     throw new Error(userIdResult.error.message);
@@ -92,7 +92,7 @@ const deleteLocationFormSchema = z.object({
 
 export async function deleteLocationAction(formData: FormData) {
   const context = getContext();
-  
+
   const userIdResult = await context.authService.requireAuthUserId();
   if (userIdResult.isErr()) {
     throw new Error(userIdResult.error.message);
