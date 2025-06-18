@@ -13,8 +13,8 @@ import type {
   CheckInWithUser,
   ListCheckInsQuery,
 } from "@/core/domain/checkIn/types";
-import type { UserId } from "@/core/domain/user/types";
 import type { LocationId } from "@/core/domain/location/types";
+import type { UserId } from "@/core/domain/user/types";
 
 import type { Context } from "../context";
 
@@ -53,7 +53,9 @@ export async function listCheckIns(
       ? {
           ...parseResult.value.filter,
           userId: parseResult.value.filter.userId as UserId | undefined,
-          locationId: parseResult.value.filter.locationId as LocationId | undefined,
+          locationId: parseResult.value.filter.locationId as
+            | LocationId
+            | undefined,
         }
       : undefined,
   };
@@ -83,7 +85,9 @@ export async function listCheckInsWithUser(
       ? {
           ...parseResult.value.filter,
           userId: parseResult.value.filter.userId as UserId | undefined,
-          locationId: parseResult.value.filter.locationId as LocationId | undefined,
+          locationId: parseResult.value.filter.locationId as
+            | LocationId
+            | undefined,
         }
       : undefined,
   };
@@ -115,7 +119,9 @@ export async function listCheckInsWithLocation(
       ? {
           ...parseResult.value.filter,
           userId: parseResult.value.filter.userId as UserId | undefined,
-          locationId: parseResult.value.filter.locationId as LocationId | undefined,
+          locationId: parseResult.value.filter.locationId as
+            | LocationId
+            | undefined,
         }
       : undefined,
   };
