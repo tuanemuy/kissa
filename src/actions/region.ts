@@ -25,6 +25,8 @@ const updateRegionSchema = z.object({
   userId: z.string().uuid(),
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   isPublic: z.boolean().optional(),
   coverPhotoUrl: z.string().url().nullable().optional(),
 });
@@ -76,11 +78,16 @@ export async function updateRegionAction(formData: FormData) {
   }
   const userId = userIdResult.value;
 
+  const latitudeStr = getFormDataString(formData, "latitude");
+  const longitudeStr = getFormDataString(formData, "longitude");
+
   const input = {
     id: getFormDataString(formData, "id"),
     userId,
     name: getFormDataString(formData, "name"),
     description: getFormDataString(formData, "description"),
+    latitude: latitudeStr ? Number(latitudeStr) : null,
+    longitude: longitudeStr ? Number(longitudeStr) : null,
     isPublic: getFormDataString(formData, "isPublic") === "true",
   };
 
