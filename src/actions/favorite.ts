@@ -1,7 +1,11 @@
 "use server";
 
+import { getUserFavorites } from "@/core/application/favorite/getUserFavorites";
+import { getUserPinnedRegions } from "@/core/application/favorite/getUserPinnedRegions";
 import { manageFavorites } from "@/core/application/favorite/manageFavorites";
 import { managePinnedRegions } from "@/core/application/favorite/managePinnedRegions";
+import type { LocationId } from "@/core/domain/location/types";
+import type { RegionId } from "@/core/domain/region/types";
 import { getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
@@ -220,4 +224,82 @@ export async function reorderPinnedRegionsAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
+}
+
+export async function checkFavoriteStatusAction(
+  targetId: string,
+  targetType: "region" | "location",
+): Promise<boolean> {
+  const context = getContext();
+
+  const userIdResult = await context.authService.getCurrentUserId();
+  if (userIdResult.isErr() || !userIdResult.value) {
+    return false;
+  }
+  const userId = userIdResult.value;
+
+  const result = await context.favoriteRepository.isFavorited(
+    userId,
+    targetType === "region" ? (targetId as RegionId) : undefined,
+    targetType === "location" ? (targetId as LocationId) : undefined,
+  );
+
+  if (result.isErr()) {
+    return false;
+  }
+
+  return result.value;
+}
+
+export async function checkPinStatusAction(regionId: string): Promise<boolean> {
+  const context = getContext();
+
+  const userIdResult = await context.authService.getCurrentUserId();
+  if (userIdResult.isErr() || !userIdResult.value) {
+    return false;
+  }
+  const userId = userIdResult.value;
+
+  const result = await context.favoriteRepository.isPinned(
+    userId,
+    regionId as RegionId,
+  );
+
+  if (result.isErr()) {
+    return false;
+  }
+
+  return result.value;
+}
+
+export async function getUserFavoritesAction() {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const result = await getUserFavorites(context, userIdResult.value);
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+export async function getUserPinnedRegionsAction() {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const result = await getUserPinnedRegions(context, userIdResult.value);
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { getPublicLocationAction } from "@/actions/browsing";
+import { getPublicLocationWithStatusAction } from "@/actions/browsing";
+import { FavoriteButton } from "@/app/components/favorite/FavoriteButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +24,14 @@ export default function DiscoverLocationPage() {
   const params = useParams();
   const locationId = params.id as string;
 
-  const [location, setLocation] = useState<LocationWithStats | null>(null);
+  const [location, setLocation] = useState<
+    (LocationWithStats & { isFavorited: boolean }) | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   const loadLocation = useCallback(async () => {
     try {
-      const result = await getPublicLocationAction(locationId);
+      const result = await getPublicLocationWithStatusAction(locationId);
       setLocation(result);
     } catch (error) {
       console.error("Failed to load location:", error);
@@ -93,9 +96,16 @@ export default function DiscoverLocationPage() {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-3xl font-bold">{location.name}</h1>
-                {location.category && (
-                  <Badge variant="secondary">{location.category}</Badge>
-                )}
+                <div className="flex items-center gap-3">
+                  <FavoriteButton
+                    targetId={location.id}
+                    targetType="location"
+                    isFavorited={location.isFavorited}
+                  />
+                  {location.category && (
+                    <Badge variant="secondary">{location.category}</Badge>
+                  )}
+                </div>
               </div>
 
               {location.description && (

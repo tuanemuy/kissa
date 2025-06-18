@@ -5,6 +5,7 @@ import { deleteRegion } from "@/core/application/region/deleteRegion";
 import { getRegion } from "@/core/application/region/getRegion";
 import { listRegions } from "@/core/application/region/listRegions";
 import { updateRegion } from "@/core/application/region/updateRegion";
+import type { RegionId } from "@/core/domain/region/types";
 import { getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
@@ -172,4 +173,44 @@ export async function getRegionAction(regionId: string) {
   }
 
   return result.value;
+}
+
+export async function getRegionWithStatusAction(regionId: string) {
+  const context = getContext();
+
+  // Get the region data
+  const regionResult = await getRegion(context, { id: regionId });
+  if (regionResult.isErr()) {
+    throw new Error(regionResult.error.message);
+  }
+
+  const region = regionResult.value;
+  if (!region) {
+    return null;
+  }
+
+  // Check if user is authenticated and get favorite/pin status
+  const userIdResult = await context.authService.getCurrentUserId();
+  if (userIdResult.isErr() || !userIdResult.value) {
+    // User not authenticated, return region without status
+    return {
+      ...region,
+      isFavorited: false,
+      isPinned: false,
+    };
+  }
+
+  const userId = userIdResult.value;
+
+  // Get favorite and pin status in parallel
+  const [favoriteResult, pinResult] = await Promise.all([
+    context.favoriteRepository.isFavorited(userId, regionId as RegionId),
+    context.favoriteRepository.isPinned(userId, regionId as RegionId),
+  ]);
+
+  return {
+    ...region,
+    isFavorited: favoriteResult.isOk() ? favoriteResult.value : false,
+    isPinned: pinResult.isOk() ? pinResult.value : false,
+  };
 }

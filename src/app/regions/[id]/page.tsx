@@ -1,5 +1,10 @@
 import { listLocationsAction } from "@/actions/location";
-import { deleteRegionAction, getRegionAction } from "@/actions/region";
+import {
+  deleteRegionAction,
+  getRegionWithStatusAction,
+} from "@/actions/region";
+import { FavoriteButton } from "@/app/components/favorite/FavoriteButton";
+import { PinButton } from "@/app/components/favorite/PinButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,9 +33,9 @@ interface Props {
 export default async function RegionPage({ params }: Props) {
   const { id } = await params;
 
-  let region: Awaited<ReturnType<typeof getRegionAction>>;
+  let region: Awaited<ReturnType<typeof getRegionWithStatusAction>>;
   try {
-    region = await getRegionAction(id);
+    region = await getRegionWithStatusAction(id);
   } catch (error) {
     notFound();
   }
@@ -86,6 +91,12 @@ export default async function RegionPage({ params }: Props) {
                 )}
               </div>
               <div className="flex gap-2">
+                <FavoriteButton
+                  targetId={region.id}
+                  targetType="region"
+                  isFavorited={region.isFavorited}
+                />
+                <PinButton regionId={region.id} isPinned={region.isPinned} />
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/regions/${region.id}/edit`}>
                     <Edit className="h-4 w-4" />

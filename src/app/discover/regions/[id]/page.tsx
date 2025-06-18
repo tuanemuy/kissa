@@ -2,8 +2,10 @@
 
 import {
   discoverLocationsAction,
-  getPublicRegionAction,
+  getPublicRegionWithStatusAction,
 } from "@/actions/browsing";
+import { FavoriteButton } from "@/app/components/favorite/FavoriteButton";
+import { PinButton } from "@/app/components/favorite/PinButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +20,9 @@ export default function DiscoverRegionPage() {
   const params = useParams();
   const regionId = params.id as string;
 
-  const [region, setRegion] = useState<RegionWithStats | null>(null);
+  const [region, setRegion] = useState<
+    (RegionWithStats & { isFavorited: boolean; isPinned: boolean }) | null
+  >(null);
   const [locations, setLocations] = useState<LocationWithStats[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -27,7 +31,7 @@ export default function DiscoverRegionPage() {
 
   const loadRegion = useCallback(async () => {
     try {
-      const result = await getPublicRegionAction(regionId);
+      const result = await getPublicRegionWithStatusAction(regionId);
       setRegion(result);
     } catch (error) {
       console.error("Failed to load region:", error);
@@ -113,10 +117,18 @@ export default function DiscoverRegionPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold">{region.name}</h1>
-            <Badge variant="secondary">
-              {region.locationCount} location
-              {region.locationCount !== 1 ? "s" : ""}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <FavoriteButton
+                targetId={region.id}
+                targetType="region"
+                isFavorited={region.isFavorited}
+              />
+              <PinButton regionId={region.id} isPinned={region.isPinned} />
+              <Badge variant="secondary">
+                {region.locationCount} location
+                {region.locationCount !== 1 ? "s" : ""}
+              </Badge>
+            </div>
           </div>
 
           {region.description && (

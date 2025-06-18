@@ -1,7 +1,11 @@
 import { listCheckInsWithUserAction } from "@/actions/checkIn";
 import { getContext } from "@/actions/context";
-import { deleteLocationAction, getLocationAction } from "@/actions/location";
+import {
+  deleteLocationAction,
+  getLocationWithStatusAction,
+} from "@/actions/location";
 import { CheckInList } from "@/app/components/checkin/CheckInList";
+import { FavoriteButton } from "@/app/components/favorite/FavoriteButton";
 import { EditorsList } from "@/app/components/location/EditorsList";
 import { InviteEditorForm } from "@/app/components/location/InviteEditorForm";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +37,7 @@ interface Props {
 export default async function LocationPage({ params }: Props) {
   const { id } = await params;
 
-  const location = await getLocationAction(id);
+  const location = await getLocationWithStatusAction(id);
 
   // Get current user for authentication checks
   const context = getContext();
@@ -86,6 +90,11 @@ export default async function LocationPage({ params }: Props) {
                 </div>
               </div>
               <div className="flex gap-2">
+                <FavoriteButton
+                  targetId={location.id}
+                  targetType="location"
+                  isFavorited={location.isFavorited}
+                />
                 <Link href={`/locations/${id}/edit`}>
                   <Button variant="outline" size="sm">
                     <Edit className="w-4 h-4 mr-2" />

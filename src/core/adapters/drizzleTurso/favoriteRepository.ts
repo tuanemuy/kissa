@@ -560,4 +560,37 @@ export class DrizzleTursoFavoriteRepository implements FavoriteRepository {
       );
     }
   }
+
+  async findByUserId(
+    userId: UserId,
+  ): Promise<Result<Favorite[], RepositoryError>> {
+    try {
+      const items = await this.db
+        .select()
+        .from(favorites)
+        .where(eq(favorites.userId, userId))
+        .orderBy(desc(favorites.createdAt));
+
+      const validatedItems = items
+        .map((item) =>
+          validate(favoriteSchema, {
+            ...item,
+            createdAt: new Date(item.createdAt),
+          }).unwrapOr(null),
+        )
+        .filter((item): item is Favorite => item !== null);
+
+      return ok(validatedItems);
+    } catch (error) {
+      return err(
+        new RepositoryError("Failed to find favorites by user", error),
+      );
+    }
+  }
+
+  async findPinnedRegionsByUserId(
+    userId: UserId,
+  ): Promise<Result<PinnedRegion[], RepositoryError>> {
+    return this.listPinnedRegions(userId);
+  }
 }

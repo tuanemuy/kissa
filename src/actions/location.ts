@@ -16,6 +16,7 @@ import { removeLocationEditor as removeLocationEditorService } from "@/core/appl
 import { removeLocationEditorInputSchema } from "@/core/application/location/removeLocationEditor";
 import { updateLocation as updateLocationService } from "@/core/application/location/updateLocation";
 import { updateLocationInputSchema } from "@/core/application/location/updateLocation";
+import type { LocationId } from "@/core/domain/location/types";
 import { locationIdSchema, regionIdSchema } from "@/core/domain/location/types";
 import { parseFormData } from "@/lib/formData";
 import { revalidatePath } from "next/cache";
@@ -324,4 +325,58 @@ export async function listUserInvitationsAction() {
   }
 
   return result.value;
+}
+
+export async function getLocationWithStatusAction(locationId: string) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.getCurrentUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const validatedLocationId = locationIdSchema.safeParse(locationId);
+  if (!validatedLocationId.success) {
+    throw new Error("Invalid location ID");
+  }
+
+  const result = await getLocationService(
+    context,
+    validatedLocationId.data,
+    userIdResult.value || undefined,
+    { includeStats: true },
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  if (!result.value) {
+    throw new Error("Location not found");
+  }
+
+  const location = result.value;
+
+  // Check if user is authenticated and get favorite status
+  if (userIdResult.isErr() || !userIdResult.value) {
+    // User not authenticated, return location without status
+    return {
+      ...location,
+      isFavorited: false,
+    };
+  }
+
+  const userId = userIdResult.value;
+
+  // Get favorite status
+  const favoriteResult = await context.favoriteRepository.isFavorited(
+    userId,
+    undefined,
+    locationId as LocationId,
+  );
+
+  return {
+    ...location,
+    isFavorited: favoriteResult.isOk() ? favoriteResult.value : false,
+  };
 }

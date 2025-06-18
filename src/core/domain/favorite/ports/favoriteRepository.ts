@@ -70,6 +70,12 @@ export interface FavoriteRepository {
     regionId: RegionId,
   ): Promise<Result<boolean, RepositoryError>>;
 
+  // User-specific queries
+  findByUserId(userId: UserId): Promise<Result<Favorite[], RepositoryError>>;
+  findPinnedRegionsByUserId(
+    userId: UserId,
+  ): Promise<Result<PinnedRegion[], RepositoryError>>;
+
   // Statistics
   countFavoritesByRegion(
     regionId: RegionId,

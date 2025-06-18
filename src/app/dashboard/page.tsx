@@ -2,6 +2,8 @@ import { listCheckInsWithUserAction } from "@/actions/checkIn";
 import { getContext } from "@/actions/context";
 import { listRegionsAction } from "@/actions/region";
 import { CheckInList } from "@/app/components/checkin/CheckInList";
+import { FavoritesList } from "@/app/components/favorite/FavoritesList";
+import { PinnedRegionsList } from "@/app/components/favorite/PinnedRegionsList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -162,35 +164,47 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Regions</CardTitle>
-            <CardDescription>
-              Regions are collections of locations that you can manage and
-              share.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<RegionsListSkeleton />}>
-              <RegionsList />
-            </Suspense>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Regions</CardTitle>
+              <CardDescription>
+                Regions are collections of locations that you can manage and
+                share.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<RegionsListSkeleton />}>
+                <RegionsList />
+              </Suspense>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Check-ins</CardTitle>
-            <CardDescription>
-              Your latest location visits and experiences.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<CheckInsListSkeleton />}>
-              <RecentCheckInsList />
-            </Suspense>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Check-ins</CardTitle>
+              <CardDescription>
+                Your latest location visits and experiences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<CheckInsListSkeleton />}>
+                <RecentCheckInsList />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Suspense fallback={<FavoritesSkeleton />}>
+            <PinnedRegionsList />
+          </Suspense>
+
+          <Suspense fallback={<FavoritesSkeleton />}>
+            <FavoritesList />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
@@ -263,5 +277,32 @@ function CheckInsListSkeleton() {
         </Card>
       ))}
     </div>
+  );
+}
+
+function FavoritesSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-4 w-48" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {[1, 2, 3].map((index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 border rounded-lg"
+            >
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
