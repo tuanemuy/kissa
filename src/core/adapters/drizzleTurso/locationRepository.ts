@@ -35,6 +35,23 @@ import {
 export class DrizzleTursoLocationRepository implements LocationRepository {
   constructor(private readonly db: Database) {}
 
+  // Helper function to parse JSON fields in location data
+  private parseLocationJsonFields(
+    location: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      ...location,
+      contactInfo:
+        typeof location.contactInfo === "string"
+          ? JSON.parse(location.contactInfo)
+          : null,
+      operatingHours:
+        typeof location.operatingHours === "string"
+          ? JSON.parse(location.operatingHours)
+          : null,
+    };
+  }
+
   async create(
     params: CreateLocationParams,
   ): Promise<Result<Location, RepositoryError>> {
@@ -45,9 +62,16 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
           regionId: params.regionId,
           name: params.name,
           description: params.description || null,
+          category: params.category || null,
           address: params.address || null,
           latitude: params.latitude || null,
           longitude: params.longitude || null,
+          contactInfo: params.contactInfo
+            ? JSON.stringify(params.contactInfo)
+            : null,
+          operatingHours: params.operatingHours
+            ? JSON.stringify(params.operatingHours)
+            : null,
           isPublic: params.isPublic ?? false,
           coverPhotoUrl: params.coverPhotoUrl || null,
         })
@@ -58,7 +82,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
         return err(new RepositoryError("Failed to create location"));
       }
 
-      return validate(locationSchema, location).mapErr(
+      const parsedLocation = this.parseLocationJsonFields(location);
+
+      return validate(locationSchema, parsedLocation).mapErr(
         (error) => new RepositoryError("Invalid location data", error),
       );
     } catch (error) {
@@ -81,7 +107,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
         return ok(null);
       }
 
-      return validate(locationSchema, location).mapErr(
+      const parsedLocation = this.parseLocationJsonFields(location);
+
+      return validate(locationSchema, parsedLocation).mapErr(
         (error) => new RepositoryError("Invalid location data", error),
       );
     } catch (error) {
@@ -119,8 +147,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
         return ok(null);
       }
 
+      const parsedLocation = this.parseLocationJsonFields(location);
       const locationWithStats = {
-        ...location,
+        ...parsedLocation,
         favoriteCount: Number(stats[0]?.favoriteCount || 0),
         checkInCount: Number(stats[0]?.checkInCount || 0),
         averageRating: stats[0]?.averageRating
@@ -159,8 +188,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
         .map((editor) => validate(locationEditorSchema, editor).unwrapOr(null))
         .filter((editor): editor is LocationEditor => editor !== null);
 
+      const parsedLocation = this.parseLocationJsonFields(location);
       const locationWithEditors = {
-        ...location,
+        ...parsedLocation,
         editors: validatedEditors,
       };
 
@@ -178,12 +208,29 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
     params: UpdateLocationParams,
   ): Promise<Result<Location, RepositoryError>> {
     try {
-      const { id, ...updateFields } = params;
-      const updateData = Object.fromEntries(
-        Object.entries(updateFields).filter(
-          ([_, value]) => value !== undefined,
-        ),
-      );
+      const { id, contactInfo, operatingHours, ...otherFields } = params;
+
+      // Prepare update data, converting JSON fields to strings
+      const updateData: Record<string, unknown> = {};
+
+      // Add non-JSON fields
+      for (const [key, value] of Object.entries(otherFields)) {
+        if (value !== undefined) {
+          updateData[key] = value;
+        }
+      }
+
+      // Handle JSON fields
+      if (contactInfo !== undefined) {
+        updateData.contactInfo = contactInfo
+          ? JSON.stringify(contactInfo)
+          : null;
+      }
+      if (operatingHours !== undefined) {
+        updateData.operatingHours = operatingHours
+          ? JSON.stringify(operatingHours)
+          : null;
+      }
 
       const result = await this.db
         .update(locations)
@@ -196,7 +243,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
         return err(new RepositoryError("Location not found"));
       }
 
-      return validate(locationSchema, location).mapErr(
+      const parsedLocation = this.parseLocationJsonFields(location);
+
+      return validate(locationSchema, parsedLocation).mapErr(
         (error) => new RepositoryError("Invalid location data", error),
       );
     } catch (error) {
@@ -227,6 +276,8 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
       conditions.push(eq(locations.isPublic, filter.isPublic));
     if (filter?.search)
       conditions.push(like(locations.name, `%${filter.search}%`));
+    if (filter?.category)
+      conditions.push(eq(locations.category, filter.category));
 
     // TODO: Implement nearby coordinates search with proper spatial query
     if (filter?.nearbyCoordinates) {
@@ -259,13 +310,14 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
       ]);
 
       const validatedItems = items
-        .map((item) =>
-          validate(locationSchema, item)
+        .map((item) => {
+          const parsedItem = this.parseLocationJsonFields(item);
+          return validate(locationSchema, parsedItem)
             .mapErr(
               (error) => new RepositoryError("Invalid location data", error),
             )
-            .unwrapOr(null),
-        )
+            .unwrapOr(null);
+        })
         .filter((item): item is Location => item !== null);
 
       return ok({
@@ -309,9 +361,12 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
             regionId: locations.regionId,
             name: locations.name,
             description: locations.description,
+            category: locations.category,
             address: locations.address,
             latitude: locations.latitude,
             longitude: locations.longitude,
+            contactInfo: locations.contactInfo,
+            operatingHours: locations.operatingHours,
             isPublic: locations.isPublic,
             coverPhotoUrl: locations.coverPhotoUrl,
             createdAt: locations.createdAt,
@@ -342,8 +397,9 @@ export class DrizzleTursoLocationRepository implements LocationRepository {
 
       const validatedItems = items
         .map((item) => {
+          const parsedItem = this.parseLocationJsonFields(item);
           const locationWithStats = {
-            ...item,
+            ...parsedItem,
             favoriteCount: Number(item.favoriteCount || 0),
             checkInCount: Number(item.checkInCount || 0),
             averageRating: item.averageRating

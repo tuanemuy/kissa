@@ -15,15 +15,37 @@ export const locationEditorIdSchema = z
   .brand("LocationEditorId");
 export type LocationEditorId = z.infer<typeof locationEditorIdSchema>;
 
+// Contact info and operating hours schemas
+export const contactInfoSchema = z.object({
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  website: z.string().url().optional(),
+});
+export type ContactInfo = z.infer<typeof contactInfoSchema>;
+
+export const operatingHoursSchema = z.object({
+  monday: z.string().optional(),
+  tuesday: z.string().optional(),
+  wednesday: z.string().optional(),
+  thursday: z.string().optional(),
+  friday: z.string().optional(),
+  saturday: z.string().optional(),
+  sunday: z.string().optional(),
+});
+export type OperatingHours = z.infer<typeof operatingHoursSchema>;
+
 // Location entity
 export const locationSchema = z.object({
   id: locationIdSchema,
   regionId: regionIdSchema,
   name: z.string().min(1).max(100),
   description: z.string().max(1000).nullable(),
+  category: z.string().max(50).nullable(),
   address: z.string().max(500).nullable(),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),
+  contactInfo: contactInfoSchema.nullable(),
+  operatingHours: operatingHoursSchema.nullable(),
   isPublic: z.boolean(),
   coverPhotoUrl: z.string().url().nullable(),
   createdAt: z.date(),
@@ -47,9 +69,12 @@ export const createLocationParamsSchema = z.object({
   regionId: regionIdSchema,
   name: z.string().min(1).max(100),
   description: z.string().max(1000).optional(),
+  category: z.string().max(50).optional(),
   address: z.string().max(500).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  contactInfo: contactInfoSchema.optional(),
+  operatingHours: operatingHoursSchema.optional(),
   isPublic: z.boolean().optional().default(false),
   coverPhotoUrl: z.string().url().optional(),
 });
@@ -59,9 +84,12 @@ export const updateLocationParamsSchema = z.object({
   id: locationIdSchema,
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).nullable().optional(),
+  category: z.string().max(50).nullable().optional(),
   address: z.string().max(500).nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
+  contactInfo: contactInfoSchema.nullable().optional(),
+  operatingHours: operatingHoursSchema.nullable().optional(),
   isPublic: z.boolean().optional(),
   coverPhotoUrl: z.string().url().nullable().optional(),
 });
@@ -94,6 +122,7 @@ export const listLocationsQuerySchema = z.object({
       regionId: regionIdSchema.optional(),
       isPublic: z.boolean().optional(),
       search: z.string().optional(),
+      category: z.string().optional(),
       nearbyCoordinates: z
         .object({
           latitude: z.number().min(-90).max(90),

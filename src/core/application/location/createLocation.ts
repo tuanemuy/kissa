@@ -107,9 +107,12 @@ export async function createLocation(
     regionId: regionId,
     name: parseResult.value.name,
     description: parseResult.value.description,
+    category: parseResult.value.category,
     address: parseResult.value.address,
     latitude: parseResult.value.latitude,
     longitude: parseResult.value.longitude,
+    contactInfo: parseResult.value.contactInfo,
+    operatingHours: parseResult.value.operatingHours,
     isPublic: parseResult.value.isPublic ?? false,
     coverPhotoUrl: parseResult.value.coverPhotoUrl,
   });

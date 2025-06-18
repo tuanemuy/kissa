@@ -12,6 +12,8 @@ export const regionSchema = z.object({
   creatorId: userIdSchema,
   name: z.string().min(1).max(100),
   description: z.string().max(1000).nullable(),
+  latitude: z.number().min(-90).max(90).nullable(),
+  longitude: z.number().min(-180).max(180).nullable(),
   isPublic: z.boolean(),
   coverPhotoUrl: z.string().url().nullable(),
   createdAt: z.date(),
@@ -24,6 +26,8 @@ export const createRegionParamsSchema = z.object({
   creatorId: userIdSchema,
   name: z.string().min(1).max(100),
   description: z.string().max(1000).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   isPublic: z.boolean().optional().default(false),
   coverPhotoUrl: z.string().url().optional(),
 });
@@ -33,6 +37,8 @@ export const updateRegionParamsSchema = z.object({
   id: regionIdSchema,
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   isPublic: z.boolean().optional(),
   coverPhotoUrl: z.string().url().nullable().optional(),
 });

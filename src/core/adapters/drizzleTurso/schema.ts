@@ -53,6 +53,8 @@ export const regions = sqliteTable("regions", {
     .references(() => users.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
   description: text("description"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   coverPhotoUrl: text("cover_photo_url"),
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -74,9 +76,12 @@ export const locations = sqliteTable("locations", {
     .references(() => regions.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
+  category: text("category"),
   address: text("address"),
   latitude: real("latitude"),
   longitude: real("longitude"),
+  contactInfo: text("contact_info"), // JSON string
+  operatingHours: text("operating_hours"), // JSON string
   isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
   coverPhotoUrl: text("cover_photo_url"),
   createdAt: integer("created_at", { mode: "timestamp" })

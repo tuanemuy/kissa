@@ -33,6 +33,8 @@ export class DrizzleTursoRegionRepository implements RegionRepository {
           creatorId: params.creatorId,
           name: params.name,
           description: params.description || null,
+          latitude: params.latitude || null,
+          longitude: params.longitude || null,
           isPublic: params.isPublic ?? false,
           coverPhotoUrl: params.coverPhotoUrl || null,
         })
