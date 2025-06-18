@@ -1,16 +1,16 @@
 import { BcryptPasswordHasher } from "@/core/adapters/bcrypt/passwordHasher";
+import { DrizzleTursoBillingRepository } from "@/core/adapters/drizzleTurso/billingRepository";
 import { DrizzleTursoCheckInRepository } from "@/core/adapters/drizzleTurso/checkInRepository";
 import { getDatabase } from "@/core/adapters/drizzleTurso/client";
 import { DrizzleTursoFavoriteRepository } from "@/core/adapters/drizzleTurso/favoriteRepository";
 import { DrizzleTursoLocationRepository } from "@/core/adapters/drizzleTurso/locationRepository";
+import { DrizzleTursoModerationRepository } from "@/core/adapters/drizzleTurso/moderationRepository";
+import { DrizzleTursoNotificationRepository } from "@/core/adapters/drizzleTurso/notificationRepository";
 import { DrizzleTursoRegionRepository } from "@/core/adapters/drizzleTurso/regionRepository";
 import { DrizzleTursoUserRepository } from "@/core/adapters/drizzleTurso/userRepository";
+import { MockNotificationService } from "@/core/adapters/mock/notificationService";
+import { MockPaymentGateway } from "@/core/adapters/mock/paymentGateway";
 import type { Context } from "@/core/application/context";
-import type { BillingRepository } from "@/core/domain/billing/ports/billingRepository";
-import type { PaymentGateway } from "@/core/domain/billing/ports/paymentGateway";
-import type { ModerationRepository } from "@/core/domain/moderation/ports/moderationRepository";
-import type { NotificationRepository } from "@/core/domain/notification/ports/notificationRepository";
-import type { NotificationService } from "@/core/domain/notification/ports/notificationService";
 import { z } from "zod/v4";
 
 // Environment variables schema for actions
@@ -60,13 +60,12 @@ export function getContext(): Context {
     regionRepository: new DrizzleTursoRegionRepository(db),
     locationRepository: new DrizzleTursoLocationRepository(db),
     checkInRepository: new DrizzleTursoCheckInRepository(db),
-    // TODO: Implement these repositories when needed
     favoriteRepository: new DrizzleTursoFavoriteRepository(db),
-    moderationRepository: {} as ModerationRepository,
-    notificationRepository: {} as NotificationRepository,
-    notificationService: {} as NotificationService,
-    billingRepository: {} as BillingRepository,
-    paymentGateway: {} as PaymentGateway,
+    moderationRepository: new DrizzleTursoModerationRepository(db),
+    notificationRepository: new DrizzleTursoNotificationRepository(db),
+    notificationService: new MockNotificationService(),
+    billingRepository: new DrizzleTursoBillingRepository(db),
+    paymentGateway: new MockPaymentGateway(),
   };
 
   return cachedContext;
