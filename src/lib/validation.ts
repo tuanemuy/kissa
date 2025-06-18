@@ -14,6 +14,9 @@ export class ValidationError<T> extends AnyError {
   }
 }
 
+/**
+ * Validates data against a schema and returns a Result
+ */
 export function validate<T extends z.ZodType>(
   schema: T,
   data: unknown,
@@ -31,4 +34,14 @@ export function validate<T extends z.ZodType>(
   }
 
   return ok(result.data);
+}
+
+/**
+ * Validates FormData against a schema - alias for validate
+ */
+export function validateFormData<T extends z.ZodType>(
+  schema: T,
+  data: unknown,
+): Result<z.infer<T>, ValidationError<z.infer<T>>> {
+  return validate(schema, data);
 }

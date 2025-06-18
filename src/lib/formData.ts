@@ -4,6 +4,34 @@ import type { Result } from "neverthrow";
 import type { z } from "zod/v4";
 
 /**
+ * Safely extracts a string field from FormData
+ */
+export function getFormDataString(
+  formData: FormData,
+  key: string,
+): string | undefined {
+  const value = formData.get(key);
+  if (typeof value === "string") {
+    return value === "" ? undefined : value;
+  }
+  return undefined;
+}
+
+/**
+ * Safely extracts a file field from FormData
+ */
+export function getFormDataFile(
+  formData: FormData,
+  key: string,
+): File | undefined {
+  const value = formData.get(key);
+  if (value instanceof File && value.size > 0) {
+    return value;
+  }
+  return undefined;
+}
+
+/**
  * Safely extracts and validates FormData fields using a Zod schema
  */
 export function parseFormData<T extends z.ZodType>(
