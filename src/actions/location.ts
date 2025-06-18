@@ -11,6 +11,7 @@ import { inviteLocationEditorInputSchema } from "@/core/application/location/inv
 import { listLocationEditors as listLocationEditorsService } from "@/core/application/location/listLocationEditors";
 import { listLocationEditorsInputSchema } from "@/core/application/location/listLocationEditors";
 import { listLocations as listLocationsService } from "@/core/application/location/listLocations";
+import { listUserInvitations as listUserInvitationsService } from "@/core/application/location/listUserInvitations";
 import { removeLocationEditor as removeLocationEditorService } from "@/core/application/location/removeLocationEditor";
 import { removeLocationEditorInputSchema } from "@/core/application/location/removeLocationEditor";
 import { updateLocation as updateLocationService } from "@/core/application/location/updateLocation";
@@ -300,6 +301,23 @@ export async function listLocationEditorsAction(locationId: string) {
   const result = await listLocationEditorsService(context, userIdResult.value, {
     locationId: validatedLocationId.data,
   });
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+export async function listUserInvitationsAction() {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const result = await listUserInvitationsService(context, userIdResult.value);
 
   if (result.isErr()) {
     throw new Error(result.error.message);

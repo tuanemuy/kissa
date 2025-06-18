@@ -219,6 +219,10 @@ export default function ProfilePage() {
         <Button asChild variant="outline">
           <Link href="/profile/subscription">サブスクリプション管理</Link>
         </Button>
+
+        <Button asChild variant="outline">
+          <Link href="/profile/invitations">編集者招待管理</Link>
+        </Button>
       </div>
 
       <Suspense fallback={<LoadingSkeleton />}>

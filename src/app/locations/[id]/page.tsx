@@ -2,6 +2,8 @@ import { listCheckInsWithUserAction } from "@/actions/checkIn";
 import { getContext } from "@/actions/context";
 import { deleteLocationAction, getLocationAction } from "@/actions/location";
 import { CheckInList } from "@/app/components/checkin/CheckInList";
+import { EditorsList } from "@/app/components/location/EditorsList";
+import { InviteEditorForm } from "@/app/components/location/InviteEditorForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -169,7 +171,16 @@ export default async function LocationPage({ params }: Props) {
           </CardContent>
         </Card>
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
+          {/* Editor Management Section */}
+          {currentUserId && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <InviteEditorForm locationId={id} />
+              <EditorsList locationId={id} />
+            </div>
+          )}
+
+          {/* Check-ins Section */}
           <CheckInList
             checkIns={checkInsResult.items}
             locationId={id}

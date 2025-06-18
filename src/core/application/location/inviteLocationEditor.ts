@@ -3,9 +3,9 @@ import { validate } from "@/lib/validation";
 import { type Result, err, ok } from "neverthrow";
 import { z } from "zod/v4";
 import {
-  locationIdSchema,
   type InviteLocationEditorParams,
   type LocationEditor,
+  locationIdSchema,
 } from "../../domain/location/types";
 import type { UserId } from "../../domain/user/types";
 import type { Context } from "../context";
