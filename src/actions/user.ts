@@ -25,6 +25,26 @@ export async function registerUserAction(formData: FormData) {
   redirect("/auth/login");
 }
 
+export async function loginUserAction(formData: FormData) {
+  // Parse and validate FormData
+  const email = formData.get("email")?.toString();
+  const password = formData.get("password")?.toString();
+
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
+  const context = getContext();
+  const result = await context.authService.signIn(email, password);
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+
 export async function logoutUserAction() {
   const context = getContext();
   const result = await context.authService.signOut();
