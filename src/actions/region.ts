@@ -1,38 +1,59 @@
 "use server";
 
-import { createRegion as createRegionService } from "@/core/application/region/createRegion";
-import { createRegionInputSchema } from "@/core/application/region/createRegion";
-import { userIdSchema } from "@/core/domain/user/types";
-import { auth } from "@/lib/auth";
-import { parseFormData } from "@/lib/formData";
-import { validate } from "@/lib/validation";
+import { createRegion } from "@/core/application/region/createRegion";
+import { deleteRegion } from "@/core/application/region/deleteRegion";
+import { updateRegion } from "@/core/application/region/updateRegion";
+import type { UserId } from "@/core/domain/user/types";
+import { getFormDataString } from "@/lib/formData";
+import { validateFormData } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod/v4";
 import { getContext } from "./context";
 
+const createRegionSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  isPublic: z.boolean(),
+});
+
+const updateRegionSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  isPublic: z.boolean().optional(),
+  coverPhotoUrl: z.string().url().nullable().optional(),
+});
+
+const deleteRegionSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+});
+
 export async function createRegionAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/auth/login");
-  }
-
-  const userIdResult = validate(userIdSchema, session.user.id);
-  if (userIdResult.isErr()) {
-    throw new Error("Invalid user ID");
-  }
-
-  // Parse and validate FormData with schema
-  const inputResult = parseFormData(formData, createRegionInputSchema);
-  if (inputResult.isErr()) {
-    throw new Error(`Invalid input: ${inputResult.error.message}`);
-  }
-
   const context = getContext();
-  const result = await createRegionService(
-    context,
-    userIdResult.value,
-    inputResult.value,
-  );
+
+  const input = {
+    name: getFormDataString(formData, "name"),
+    description: getFormDataString(formData, "description"),
+    latitude: Number(getFormDataString(formData, "latitude")),
+    longitude: Number(getFormDataString(formData, "longitude")),
+    isPublic: getFormDataString(formData, "isPublic") === "true",
+  };
+
+  const validationResult = validateFormData(createRegionSchema, input);
+  if (validationResult.isErr()) {
+    throw new Error(validationResult.error.message);
+  }
+
+  const params = validationResult.value;
+
+  // TODO: Get userId from session/auth context
+  const userId = "00000000-0000-0000-0000-000000000000" as UserId;
+  const result = await createRegion(context, userId, params);
 
   if (result.isErr()) {
     throw new Error(result.error.message);
@@ -40,4 +61,64 @@ export async function createRegionAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   redirect(`/regions/${result.value.id}`);
+}
+
+export async function updateRegionAction(formData: FormData) {
+  const context = getContext();
+
+  // TODO: Get userId from session/auth context
+  const userId = "00000000-0000-0000-0000-000000000000";
+
+  const input = {
+    id: getFormDataString(formData, "id"),
+    userId,
+    name: getFormDataString(formData, "name"),
+    description: getFormDataString(formData, "description"),
+    isPublic: getFormDataString(formData, "isPublic") === "true",
+  };
+
+  const validationResult = validateFormData(updateRegionSchema, input);
+  if (validationResult.isErr()) {
+    throw new Error(validationResult.error.message);
+  }
+
+  const params = validationResult.value;
+
+  const result = await updateRegion(context, params);
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath(`/regions/${params.id}`);
+  revalidatePath("/dashboard");
+  redirect(`/regions/${params.id}`);
+}
+
+export async function deleteRegionAction(formData: FormData) {
+  const context = getContext();
+
+  // TODO: Get userId from session/auth context
+  const userId = "00000000-0000-0000-0000-000000000000";
+
+  const input = {
+    id: getFormDataString(formData, "id"),
+    userId,
+  };
+
+  const validationResult = validateFormData(deleteRegionSchema, input);
+  if (validationResult.isErr()) {
+    throw new Error(validationResult.error.message);
+  }
+
+  const params = validationResult.value;
+
+  const result = await deleteRegion(context, params);
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
