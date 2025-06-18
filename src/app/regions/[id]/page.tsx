@@ -1,3 +1,4 @@
+import { listLocationsAction } from "@/actions/location";
 import { deleteRegionAction, getRegionAction } from "@/actions/region";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Edit, Globe, Lock, MapPin, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Globe,
+  Lock,
+  MapPin,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -28,6 +37,14 @@ export default async function RegionPage({ params }: Props) {
 
   if (!region) {
     notFound();
+  }
+
+  // Fetch locations for this region
+  let locations: Awaited<ReturnType<typeof listLocationsAction>>;
+  try {
+    locations = await listLocationsAction(id);
+  } catch (error) {
+    locations = { items: [], count: 0 };
   }
 
   return (
@@ -105,25 +122,68 @@ export default async function RegionPage({ params }: Props) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Locations</CardTitle>
-            <CardDescription>
-              Manage locations within this region
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No locations yet</h3>
-              <p className="text-muted-foreground">
-                Add locations to this region to get started.
-              </p>
-              <Button asChild className="mt-4">
-                <Link href={`/regions/${region.id}/locations/new`}>
-                  <MapPin className="mr-2 h-4 w-4" />
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Locations</CardTitle>
+                <CardDescription>
+                  Manage locations within this region
+                </CardDescription>
+              </div>
+              <Button asChild size="sm">
+                <Link href={`/locations/new?regionId=${region.id}`}>
+                  <Plus className="mr-2 h-4 w-4" />
                   Add Location
                 </Link>
               </Button>
             </div>
+          </CardHeader>
+          <CardContent>
+            {locations.count === 0 ? (
+              <div className="text-center py-8">
+                <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No locations yet</h3>
+                <p className="text-muted-foreground">
+                  Add locations to this region to get started.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {locations.items.map((location) => (
+                  <Card key={location.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold mb-1">
+                            <Link
+                              href={`/locations/${location.id}`}
+                              className="hover:underline"
+                            >
+                              {location.name}
+                            </Link>
+                          </h4>
+                          {location.description && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {location.description}
+                            </p>
+                          )}
+                          {location.address && (
+                            <p className="text-sm text-muted-foreground">
+                              <MapPin className="inline h-3 w-3 mr-1" />
+                              {location.address}
+                            </p>
+                          )}
+                        </div>
+                        <Badge
+                          variant={location.isPublic ? "default" : "secondary"}
+                        >
+                          {location.isPublic ? "Public" : "Private"}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

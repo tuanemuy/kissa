@@ -3,6 +3,8 @@
 import { createLocation as createLocationService } from "@/core/application/location/createLocation";
 import { createLocationInputSchema } from "@/core/application/location/createLocation";
 import { deleteLocation as deleteLocationService } from "@/core/application/location/deleteLocation";
+import { getLocation as getLocationService } from "@/core/application/location/getLocation";
+import { listLocations as listLocationsService } from "@/core/application/location/listLocations";
 import { updateLocation as updateLocationService } from "@/core/application/location/updateLocation";
 import { updateLocationInputSchema } from "@/core/application/location/updateLocation";
 import { locationIdSchema, regionIdSchema } from "@/core/domain/location/types";
@@ -118,4 +120,69 @@ export async function deleteLocationAction(formData: FormData) {
 
   revalidatePath(`/regions/${regionId}`);
   redirect(`/regions/${regionId}`);
+}
+
+export async function getLocationAction(locationId: string) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const validatedLocationId = locationIdSchema.safeParse(locationId);
+  if (!validatedLocationId.success) {
+    throw new Error("Invalid location ID");
+  }
+
+  const result = await getLocationService(
+    context,
+    validatedLocationId.data,
+    userIdResult.value,
+    { includeStats: true },
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  if (!result.value) {
+    throw new Error("Location not found");
+  }
+
+  return result.value;
+}
+
+export async function listLocationsAction(
+  regionId: string,
+  page = 1,
+  limit = 10,
+) {
+  const context = getContext();
+
+  const userIdResult = await context.authService.requireAuthUserId();
+  if (userIdResult.isErr()) {
+    throw new Error(userIdResult.error.message);
+  }
+
+  const validatedRegionId = regionIdSchema.safeParse(regionId);
+  if (!validatedRegionId.success) {
+    throw new Error("Invalid region ID");
+  }
+
+  const result = await listLocationsService(
+    context,
+    {
+      filter: { regionId: validatedRegionId.data },
+      pagination: { page, limit },
+      includeStats: true,
+    },
+    userIdResult.value,
+  );
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
 }
