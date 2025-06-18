@@ -244,6 +244,39 @@ export async function listFavoritesWithLocation(
   return ok(result.value);
 }
 
+/**
+ * Manages favorites (add/remove)
+ */
+export async function manageFavorites(
+  context: Context,
+  input: {
+    action: "add" | "remove";
+    targetId: string;
+    targetType: "region" | "location";
+    userId?: string;
+  },
+): Promise<Result<undefined | Favorite, ApplicationError>> {
+  // TODO: Get userId from session/auth context
+  const userId = input.userId || "00000000-0000-0000-0000-000000000000";
+
+  if (input.action === "add") {
+    const addInput: AddFavoriteInput = {
+      userId,
+      regionId: input.targetType === "region" ? input.targetId : undefined,
+      locationId: input.targetType === "location" ? input.targetId : undefined,
+    };
+    return addFavorite(context, addInput);
+  }
+  const removeInput: RemoveFavoriteInput = {
+    userId,
+    regionId: input.targetType === "region" ? input.targetId : undefined,
+    locationId: input.targetType === "location" ? input.targetId : undefined,
+  };
+  return removeFavorite(context, removeInput).then((result) =>
+    result.map(() => undefined),
+  );
+}
+
 export async function isFavorited(
   context: Context,
   userId: string,
