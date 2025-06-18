@@ -1,6 +1,8 @@
 import type { BillingRepository } from "../domain/billing/ports/billingRepository";
 import type { PaymentGateway } from "../domain/billing/ports/paymentGateway";
 import type { CheckInRepository } from "../domain/checkIn/ports/checkInRepository";
+import type { FileStorageService } from "../domain/common/ports/fileStorageService";
+import type { MapsService } from "../domain/common/ports/mapsService";
 import type { FavoriteRepository } from "../domain/favorite/ports/favoriteRepository";
 import type { LocationRepository } from "../domain/location/ports/locationRepository";
 import type { ModerationRepository } from "../domain/moderation/ports/moderationRepository";
@@ -39,4 +41,8 @@ export interface Context {
   // Billing domain
   billingRepository: BillingRepository;
   paymentGateway: PaymentGateway;
+
+  // Common services
+  mapsService: MapsService;
+  fileStorageService: FileStorageService;
 }
