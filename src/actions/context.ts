@@ -1,3 +1,4 @@
+import { AuthJsAuthService } from "@/core/adapters/authjs/authService";
 import { BcryptPasswordHasher } from "@/core/adapters/bcrypt/passwordHasher";
 import { DrizzleTursoBillingRepository } from "@/core/adapters/drizzleTurso/billingRepository";
 import { DrizzleTursoCheckInRepository } from "@/core/adapters/drizzleTurso/checkInRepository";
@@ -53,10 +54,12 @@ export function getContext(): Context {
 
   const env = getEnv();
   const db = getDatabase(env.DATABASE_URL, env.DATABASE_AUTH_TOKEN);
+  const userRepository = new DrizzleTursoUserRepository(db);
 
   cachedContext = {
-    userRepository: new DrizzleTursoUserRepository(db),
+    userRepository,
     passwordHasher: new BcryptPasswordHasher(),
+    authService: new AuthJsAuthService(userRepository),
     regionRepository: new DrizzleTursoRegionRepository(db),
     locationRepository: new DrizzleTursoLocationRepository(db),
     checkInRepository: new DrizzleTursoCheckInRepository(db),
