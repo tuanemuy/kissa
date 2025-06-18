@@ -18,6 +18,9 @@ export interface UserRepository {
   ): Promise<Result<User, RepositoryError>>;
   findById(id: UserId): Promise<Result<User | null, RepositoryError>>;
   findByEmail(email: string): Promise<Result<User | null, RepositoryError>>;
+  findByStripeCustomerId(
+    customerId: string,
+  ): Promise<Result<User | null, RepositoryError>>;
   update(params: UpdateUserParams): Promise<Result<User, RepositoryError>>;
   delete(id: UserId): Promise<Result<void, RepositoryError>>;
   list(

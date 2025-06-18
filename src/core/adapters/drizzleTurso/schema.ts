@@ -16,6 +16,8 @@ export const users = sqliteTable("users", {
     .default("free"),
   profilePhotoUrl: text("profile_photo_url"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),

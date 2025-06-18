@@ -71,6 +71,8 @@ export class DrizzleTursoUserRepository implements UserRepository {
           subscription: users.subscription,
           profilePhotoUrl: users.profilePhotoUrl,
           isActive: users.isActive,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         })
@@ -104,6 +106,8 @@ export class DrizzleTursoUserRepository implements UserRepository {
           subscription: users.subscription,
           profilePhotoUrl: users.profilePhotoUrl,
           isActive: users.isActive,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         })
@@ -121,6 +125,43 @@ export class DrizzleTursoUserRepository implements UserRepository {
       );
     } catch (error) {
       return err(new RepositoryError("Failed to find user", error));
+    }
+  }
+
+  async findByStripeCustomerId(
+    customerId: string,
+  ): Promise<Result<User | null, RepositoryError>> {
+    try {
+      const result = await this.db
+        .select({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          role: users.role,
+          subscription: users.subscription,
+          profilePhotoUrl: users.profilePhotoUrl,
+          isActive: users.isActive,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users)
+        .where(eq(users.stripeCustomerId, customerId))
+        .limit(1);
+
+      const user = result[0];
+      if (!user) {
+        return ok(null);
+      }
+
+      return validate(userSchema, user).mapErr(
+        (error) => new RepositoryError("Invalid user data", error),
+      );
+    } catch (error) {
+      return err(
+        new RepositoryError("Failed to find user by stripe customer ID", error),
+      );
     }
   }
 

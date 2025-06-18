@@ -23,6 +23,8 @@ export const userSchema = z.object({
   subscription: subscriptionPlanSchema,
   profilePhotoUrl: z.string().url().nullable(),
   isActive: z.boolean(),
+  stripeCustomerId: z.string().nullable(),
+  stripeSubscriptionId: z.string().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -57,6 +59,8 @@ export const updateUserParamsSchema = z.object({
   profilePhotoUrl: z.string().url().nullable().optional(),
   subscription: subscriptionPlanSchema.optional(),
   isActive: z.boolean().optional(),
+  stripeCustomerId: z.string().nullable().optional(),
+  stripeSubscriptionId: z.string().nullable().optional(),
 });
 export type UpdateUserParams = z.infer<typeof updateUserParamsSchema>;
 
