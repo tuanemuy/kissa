@@ -3,7 +3,7 @@
 import { createRegion } from "@/core/application/region/createRegion";
 import { deleteRegion } from "@/core/application/region/deleteRegion";
 import { updateRegion } from "@/core/application/region/updateRegion";
-import type { UserId } from "@/core/domain/user/types";
+import { requireAuth } from "@/lib/auth";
 import { getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
@@ -51,8 +51,7 @@ export async function createRegionAction(formData: FormData) {
 
   const params = validationResult.value;
 
-  // TODO: Get userId from session/auth context
-  const userId = "00000000-0000-0000-0000-000000000000" as UserId;
+  const userId = await requireAuth();
   const result = await createRegion(context, userId, params);
 
   if (result.isErr()) {
@@ -66,8 +65,7 @@ export async function createRegionAction(formData: FormData) {
 export async function updateRegionAction(formData: FormData) {
   const context = getContext();
 
-  // TODO: Get userId from session/auth context
-  const userId = "00000000-0000-0000-0000-000000000000";
+  const userId = await requireAuth();
 
   const input = {
     id: getFormDataString(formData, "id"),
@@ -98,8 +96,7 @@ export async function updateRegionAction(formData: FormData) {
 export async function deleteRegionAction(formData: FormData) {
   const context = getContext();
 
-  // TODO: Get userId from session/auth context
-  const userId = "00000000-0000-0000-0000-000000000000";
+  const userId = await requireAuth();
 
   const input = {
     id: getFormDataString(formData, "id"),
