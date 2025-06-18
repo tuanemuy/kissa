@@ -2,8 +2,13 @@
 
 import { createCheckIn } from "@/core/application/checkIn/createCheckIn";
 import { deleteCheckIn } from "@/core/application/checkIn/deleteCheckIn";
+import { getCheckIn } from "@/core/application/checkIn/getCheckIn";
+import {
+  listCheckIns,
+  listCheckInsWithUser,
+} from "@/core/application/checkIn/listCheckIns";
 import { updateCheckIn } from "@/core/application/checkIn/updateCheckIn";
-import type { CheckInId } from "@/core/domain/checkIn/types";
+import type { CheckInId, ListCheckInsQuery } from "@/core/domain/checkIn/types";
 import { getFormDataFile, getFormDataString } from "@/lib/formData";
 import { validateFormData } from "@/lib/validation";
 import { redirect } from "next/navigation";
@@ -147,4 +152,40 @@ export async function deleteCheckInAction(formData: FormData) {
   } else {
     redirect("/dashboard");
   }
+}
+
+export async function getCheckInAction(id: string) {
+  const context = getContext();
+
+  const result = await getCheckIn(context, { id: id as CheckInId });
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+export async function listCheckInsAction(query: ListCheckInsQuery) {
+  const context = getContext();
+
+  const result = await listCheckIns(context, query);
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
+}
+
+export async function listCheckInsWithUserAction(query: ListCheckInsQuery) {
+  const context = getContext();
+
+  const result = await listCheckInsWithUser(context, query);
+
+  if (result.isErr()) {
+    throw new Error(result.error.message);
+  }
+
+  return result.value;
 }
