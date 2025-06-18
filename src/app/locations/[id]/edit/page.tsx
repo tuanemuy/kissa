@@ -35,9 +35,12 @@ function EditLocationForm({ locationId }: { locationId: string }) {
     id: string;
     name: string;
     description: string | null;
+    category: string | null;
     address: string | null;
     latitude: number | null;
     longitude: number | null;
+    contactInfo: { phone?: string; email?: string; website?: string } | null;
+    operatingHours: Record<string, string> | null;
     isPublic: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +156,18 @@ function EditLocationForm({ locationId }: { locationId: string }) {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  name="category"
+                  maxLength={50}
+                  defaultValue={location.category || ""}
+                  placeholder="e.g. Restaurant, Museum, Park (optional)"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="address">
                   <MapPin className="w-4 h-4 inline mr-1" />
                   Address
@@ -196,6 +211,79 @@ function EditLocationForm({ locationId }: { locationId: string }) {
                     placeholder="-180 to 180"
                     disabled={isSubmitting}
                   />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-medium">
+                    Contact Information
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        name="contactInfo.phone"
+                        type="tel"
+                        defaultValue={location.contactInfo?.phone || ""}
+                        placeholder="Phone number"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="contactInfo.email"
+                        type="email"
+                        defaultValue={location.contactInfo?.email || ""}
+                        placeholder="Email address"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="website">Website</Label>
+                      <Input
+                        id="website"
+                        name="contactInfo.website"
+                        type="url"
+                        defaultValue={location.contactInfo?.website || ""}
+                        placeholder="Website URL"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-base font-medium">
+                    Operating Hours
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    {[
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday",
+                    ].map((day) => (
+                      <div key={day} className="space-y-2">
+                        <Label htmlFor={day} className="capitalize">
+                          {day}
+                        </Label>
+                        <Input
+                          id={day}
+                          name={`operatingHours.${day}`}
+                          defaultValue={location.operatingHours?.[day] || ""}
+                          placeholder="e.g. 9:00 AM - 5:00 PM"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
