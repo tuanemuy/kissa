@@ -1,4 +1,7 @@
+import { listCheckInsWithUserAction } from "@/actions/checkIn";
+import { getContext } from "@/actions/context";
 import { deleteLocationAction, getLocationAction } from "@/actions/location";
+import { CheckInList } from "@/app/components/checkin/CheckInList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { LocationId } from "@/core/domain/location/types";
 import {
   ArrowLeft,
   Calendar,
@@ -28,6 +32,18 @@ export default async function LocationPage({ params }: Props) {
   const { id } = await params;
 
   const location = await getLocationAction(id);
+
+  // Get current user for authentication checks
+  const context = getContext();
+  const userResult = await context.authService.getCurrentUserId();
+  const currentUserId = userResult.isOk() ? userResult.value : undefined;
+
+  // Fetch check-ins for this location
+  const checkInsResult = await listCheckInsWithUserAction({
+    pagination: { page: 1, limit: 10 },
+    filter: { locationId: id as LocationId },
+    sort: { field: "createdAt", order: "desc" },
+  });
 
   const deleteLocationWithId = deleteLocationAction.bind(null);
 
@@ -153,17 +169,15 @@ export default async function LocationPage({ params }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Check-ins</CardTitle>
-            <CardDescription>Recent check-ins at this location</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Check-in functionality coming soon...
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mt-6">
+          <CheckInList
+            checkIns={checkInsResult.items}
+            locationId={id}
+            showActions={true}
+            currentUserId={currentUserId || undefined}
+            showCreateButton={!!currentUserId}
+          />
+        </div>
       </div>
     </div>
   );

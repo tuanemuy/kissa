@@ -1,4 +1,7 @@
+import { listCheckInsWithUserAction } from "@/actions/checkIn";
+import { getContext } from "@/actions/context";
 import { listRegionsAction } from "@/actions/region";
+import { CheckInList } from "@/app/components/checkin/CheckInList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Globe, Lock, MapPin, Plus } from "lucide-react";
+import { Calendar, Globe, Lock, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -84,6 +87,63 @@ async function RegionsList() {
   );
 }
 
+async function RecentCheckInsList() {
+  const context = getContext();
+  const userResult = await context.authService.getCurrentUserId();
+
+  if (!userResult.isOk()) {
+    return null;
+  }
+
+  const userId = userResult.value;
+
+  try {
+    const checkInsData = await listCheckInsWithUserAction({
+      pagination: { page: 1, limit: 5 },
+      filter: { userId: userId || undefined },
+      sort: { field: "createdAt", order: "desc" },
+    });
+
+    if (checkInsData.items.length === 0) {
+      return (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">No check-ins yet</h3>
+              <p className="text-muted-foreground">
+                Start exploring locations and check in to track your visits.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <CheckInList
+        checkIns={checkInsData.items}
+        showActions={true}
+        currentUserId={userId || undefined}
+        title="Recent Check-ins"
+        description="Your latest check-ins"
+      />
+    );
+  } catch (error) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              Unable to load check-ins at this time.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+}
+
 export default function DashboardPage() {
   return (
     <div className="container mx-auto py-6">
@@ -114,6 +174,20 @@ export default function DashboardPage() {
           <CardContent>
             <Suspense fallback={<RegionsListSkeleton />}>
               <RegionsList />
+            </Suspense>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Check-ins</CardTitle>
+            <CardDescription>
+              Your latest location visits and experiences.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={<CheckInsListSkeleton />}>
+              <RecentCheckInsList />
             </Suspense>
           </CardContent>
         </Card>
@@ -161,6 +235,33 @@ function RegionsListSkeleton() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CheckInsListSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((index) => (
+        <Card key={index}>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="h-8 w-16" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-16 w-full" />
+            <div className="flex items-center gap-4 mt-4">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
