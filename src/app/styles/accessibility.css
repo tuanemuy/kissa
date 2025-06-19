@@ -1,0 +1,344 @@
+/* WCAG 2.1 AA Accessibility Styles */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip links */
+.skip-links {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 9999;
+}
+
+.skip-link {
+  position: absolute;
+  transform: translateY(-100%);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: transform 0.2s ease-in-out;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Focus indicators */
+.focus-visible-enabled *:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.focus-visible-enabled button:focus-visible,
+.focus-visible-enabled a:focus-visible,
+.focus-visible-enabled input:focus-visible,
+.focus-visible-enabled textarea:focus-visible,
+.focus-visible-enabled select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #ffffff;
+  --muted: #333333;
+  --muted-foreground: #cccccc;
+  --accent: #666666;
+  --accent-foreground: #ffffff;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #666666;
+  --input: #333333;
+  --ring: #ffffff;
+}
+
+.high-contrast * {
+  border-color: currentColor !important;
+}
+
+.high-contrast img {
+  filter: contrast(150%) brightness(110%);
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  border: 2px solid currentColor !important;
+}
+
+/* Reduced motion */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* System preference respect */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --background: #000000;
+    --foreground: #ffffff;
+    --primary: #ffffff;
+    --primary-foreground: #000000;
+    --border: #666666;
+  }
+
+  * {
+    border-color: currentColor !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .high-contrast {
+    --background: #ffffff;
+    --foreground: #000000;
+    --primary: #000000;
+    --primary-foreground: #ffffff;
+  }
+}
+
+/* Text scaling support */
+html {
+  font-size: 16px; /* Base font size */
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: calc(16px + 0.5vw);
+  }
+}
+
+/* Better button accessibility */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button[aria-pressed="true"] {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Form accessibility */
+input:invalid,
+textarea:invalid,
+select:invalid {
+  border-color: var(--destructive);
+}
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--destructive);
+  border-width: 2px;
+}
+
+/* Error messages */
+[role="alert"] {
+  color: var(--destructive);
+  font-weight: 500;
+}
+
+/* Loading indicators */
+[aria-busy="true"] {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Better link accessibility */
+a:not([class]) {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+a:not([class]):hover {
+  text-decoration: none;
+}
+
+a:not([class]):focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Table accessibility */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  font-weight: 600;
+  text-align: left;
+}
+
+th[scope="col"] {
+  border-bottom: 2px solid var(--border);
+}
+
+th[scope="row"] {
+  border-right: 2px solid var(--border);
+}
+
+/* Dialog/modal accessibility */
+[role="dialog"] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+[role="dialog"] + [data-overlay] {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+/* List accessibility */
+[role="list"] {
+  list-style: none;
+  padding: 0;
+}
+
+[role="listitem"] {
+  display: block;
+}
+
+/* Navigation accessibility */
+[role="navigation"] ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+[role="navigation"] a[aria-current="page"] {
+  font-weight: 600;
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Touch target minimum size (44px x 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"],
+[tabindex="0"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ensure sufficient spacing between interactive elements */
+button + button,
+a + a,
+button + a,
+a + button {
+  margin-left: 0.5rem;
+}
+
+/* Better visibility for required fields */
+[required]::after,
+[aria-required="true"]::after {
+  content: " *";
+  color: var(--destructive);
+}
+
+/* Status messages */
+[role="status"] {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 4px solid var(--primary);
+}
+
+[role="alert"] {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 4px solid var(--destructive);
+}
+
+/* Progress indicators */
+[role="progressbar"] {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+[role="progressbar"]::before {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+/* Tooltip accessibility */
+[role="tooltip"] {
+  position: absolute;
+  z-index: 10;
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  max-width: 250px;
+}
+
+/* Landmark regions */
+[role="banner"],
+[role="navigation"],
+[role="main"],
+[role="complementary"],
+[role="contentinfo"] {
+  display: block;
+}
+
+/* Ensure keyboard navigation works for custom components */
+[tabindex="0"]:focus,
+[tabindex="-1"]:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
