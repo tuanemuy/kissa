@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
-import type { UserId } from "@/core/domain/user/types";
 import type { PrivacyService } from "@/core/domain/privacy/ports/privacyService";
 import type {
   ComplianceReport,
@@ -15,6 +14,7 @@ import type {
   RecordConsentParams,
   UpdateCookieConsentParams,
 } from "@/core/domain/privacy/types";
+import type { UserId } from "@/core/domain/user/types";
 import { AnyError } from "@/lib/errors";
 import { type Result, err, ok } from "neverthrow";
 
