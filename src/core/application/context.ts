@@ -1,3 +1,4 @@
+import type { BackupService } from "../domain/backup/ports/backupService";
 import type { BillingRepository } from "../domain/billing/ports/billingRepository";
 import type { PaymentGateway } from "../domain/billing/ports/paymentGateway";
 import type { CheckInRepository } from "../domain/checkIn/ports/checkInRepository";
@@ -6,8 +7,12 @@ import type { MapsService } from "../domain/common/ports/mapsService";
 import type { FavoriteRepository } from "../domain/favorite/ports/favoriteRepository";
 import type { LocationRepository } from "../domain/location/ports/locationRepository";
 import type { ModerationRepository } from "../domain/moderation/ports/moderationRepository";
+import type { AlertManager } from "../domain/monitoring/ports/alertManager";
+import type { MetricsCollector } from "../domain/monitoring/ports/metricsCollector";
 import type { NotificationRepository } from "../domain/notification/ports/notificationRepository";
 import type { NotificationService } from "../domain/notification/ports/notificationService";
+import type { PushNotificationService } from "../domain/notification/ports/pushNotificationService";
+import type { PrivacyService } from "../domain/privacy/ports/privacyService";
 import type { RegionRepository } from "../domain/region/ports/regionRepository";
 import type { AuthService } from "../domain/user/ports/authService";
 import type { PasswordHasher } from "../domain/user/ports/passwordHasher";
@@ -37,6 +42,7 @@ export interface Context {
   // Notification domain
   notificationRepository: NotificationRepository;
   notificationService: NotificationService;
+  pushNotificationService: PushNotificationService;
 
   // Billing domain
   billingRepository: BillingRepository;
@@ -45,4 +51,14 @@ export interface Context {
   // Common services
   mapsService: MapsService;
   fileStorageService: FileStorageService;
+
+  // Monitoring services
+  metricsCollector: MetricsCollector;
+  alertManager: AlertManager;
+
+  // Backup services
+  backupService: BackupService;
+
+  // Privacy services
+  privacyService: PrivacyService;
 }

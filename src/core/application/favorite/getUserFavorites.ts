@@ -1,6 +1,6 @@
-import type { UserId } from "@/core/domain/user/types";
-import { regionIdSchema } from "@/core/domain/region/types";
 import { locationIdSchema } from "@/core/domain/location/types";
+import { regionIdSchema } from "@/core/domain/region/types";
+import type { UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import type { Result } from "neverthrow";
 import { err, ok } from "neverthrow";
