@@ -11,6 +11,7 @@ export const notificationTypeSchema = z.enum([
   "content_moderation",
   "check_in_activity",
   "system",
+  "push_notification",
 ]);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
@@ -62,4 +63,75 @@ export const listNotificationsQuerySchema = z.object({
 });
 export type ListNotificationsQuery = z.infer<
   typeof listNotificationsQuerySchema
+>;
+
+// Push notification types
+export const pushNotificationChannelSchema = z.enum([
+  "web",
+  "mobile",
+  "email",
+  "sms",
+]);
+export type PushNotificationChannel = z.infer<
+  typeof pushNotificationChannelSchema
+>;
+
+export const pushNotificationStatusSchema = z.enum([
+  "pending",
+  "sent",
+  "delivered",
+  "failed",
+  "expired",
+]);
+export type PushNotificationStatus = z.infer<
+  typeof pushNotificationStatusSchema
+>;
+
+export const deviceTokenSchema = z.object({
+  id: z.string().uuid(),
+  userId: userIdSchema,
+  token: z.string(),
+  platform: z.enum(["web", "ios", "android"]),
+  isActive: z.boolean(),
+  createdAt: z.date(),
+  lastUsedAt: z.date(),
+});
+export type DeviceToken = z.infer<typeof deviceTokenSchema>;
+
+export const pushNotificationJobSchema = z.object({
+  id: z.string().uuid(),
+  notificationId: notificationIdSchema,
+  userId: userIdSchema,
+  channel: pushNotificationChannelSchema,
+  status: pushNotificationStatusSchema,
+  payload: z.record(z.string(), z.unknown()),
+  deviceToken: z.string().optional(),
+  scheduledAt: z.date(),
+  sentAt: z.date().optional(),
+  deliveredAt: z.date().optional(),
+  failureReason: z.string().optional(),
+  retryCount: z.number().default(0),
+});
+export type PushNotificationJob = z.infer<typeof pushNotificationJobSchema>;
+
+export const sendPushNotificationParamsSchema = z.object({
+  userId: userIdSchema,
+  title: z.string().max(200),
+  body: z.string().max(1000),
+  data: z.record(z.string(), z.unknown()).optional(),
+  channels: z.array(pushNotificationChannelSchema).optional(),
+  priority: z.enum(["low", "normal", "high"]).default("normal"),
+  ttl: z.number().optional(), // Time to live in seconds
+});
+export type SendPushNotificationParams = z.infer<
+  typeof sendPushNotificationParamsSchema
+>;
+
+export const registerDeviceTokenParamsSchema = z.object({
+  userId: userIdSchema,
+  token: z.string(),
+  platform: z.enum(["web", "ios", "android"]),
+});
+export type RegisterDeviceTokenParams = z.infer<
+  typeof registerDeviceTokenParamsSchema
 >;
