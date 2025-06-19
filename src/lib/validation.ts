@@ -1,6 +1,6 @@
 import { type Result, ResultAsync, err, ok } from "neverthrow";
 import type { z } from "zod/v4";
-import { AnyError } from "./error";
+import { AnyError } from "./errors";
 
 export class ValidationError<T> extends AnyError {
   override readonly name = "ValidationError";

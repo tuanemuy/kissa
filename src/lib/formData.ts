@@ -1,4 +1,4 @@
-import type { ValidationError } from "@/lib/error";
+import type { ValidationError } from "@/lib/validation";
 import { validate } from "@/lib/validation";
 import type { Result } from "neverthrow";
 import { z } from "zod/v4";
@@ -37,7 +37,7 @@ export function getFormDataFile(
 export function parseFormData<T extends z.ZodType>(
   formData: FormData,
   schema: T,
-): Result<z.infer<T>, ValidationError> {
+): Result<z.infer<T>, ValidationError<z.infer<T>>> {
   const data: Record<string, unknown> = {};
 
   // Extract all form data entries
@@ -60,7 +60,10 @@ export function parseFormData<T extends z.ZodType>(
 export function parseFormDataObject<T extends Record<string, z.ZodType>>(
   formData: FormData,
   fields: T,
-): Result<Record<string, unknown>, ValidationError> {
+): Result<Record<string, unknown>, ValidationError<Record<string, unknown>>> {
   const schema = z.object(fields);
-  return parseFormData(formData, schema);
+  return parseFormData(formData, schema) as Result<
+    Record<string, unknown>,
+    ValidationError<Record<string, unknown>>
+  >;
 }
