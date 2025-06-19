@@ -13,7 +13,7 @@
     "lint": "biome lint",
     "lint:fix": "biome check --write",
     "format": "biome format --write",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "alloy": "alloy6 exec -f ./spec/structure.als",
     "tlc": "timeout 30 tlc -config ./spec/behavior.cfg ./spec/behavior.tla"
   },
@@ -85,10 +85,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@vitest/ui": "^3.2.4",
     "drizzle-kit": "^0.31.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@10.12.1"
 }
