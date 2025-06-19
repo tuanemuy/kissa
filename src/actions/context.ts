@@ -9,14 +9,19 @@ import { DrizzleTursoModerationRepository } from "@/core/adapters/drizzleTurso/m
 import { DrizzleTursoNotificationRepository } from "@/core/adapters/drizzleTurso/notificationRepository";
 import { DrizzleTursoRegionRepository } from "@/core/adapters/drizzleTurso/regionRepository";
 import { DrizzleTursoUserRepository } from "@/core/adapters/drizzleTurso/userRepository";
+import { FirebasePushNotificationService } from "@/core/adapters/firebase/pushNotificationService";
 import {
   type GoogleMapsConfig,
   GoogleMapsService,
 } from "@/core/adapters/googlemaps/mapsService";
+import { MemoryAlertManager } from "@/core/adapters/memory/alertManager";
+import { MemoryPrivacyService } from "@/core/adapters/memory/privacyService";
 import {
   NodemailerNotificationService,
   type SmtpConfig,
 } from "@/core/adapters/nodemailer/notificationService";
+import { PrometheusMetricsCollector } from "@/core/adapters/prometheus/metricsCollector";
+import { S3BackupService } from "@/core/adapters/s3/backupService";
 import {
   type S3Config,
   S3FileStorageService,
@@ -131,6 +136,11 @@ export function getContext(): Context {
     paymentGateway: new StripePaymentGateway(stripeConfig),
     mapsService: new GoogleMapsService(googleMapsConfig),
     fileStorageService: new S3FileStorageService(s3Config),
+    pushNotificationService: new FirebasePushNotificationService(),
+    metricsCollector: new PrometheusMetricsCollector(),
+    alertManager: new MemoryAlertManager(),
+    backupService: new S3BackupService(),
+    privacyService: new MemoryPrivacyService(),
   };
 
   return cachedContext;

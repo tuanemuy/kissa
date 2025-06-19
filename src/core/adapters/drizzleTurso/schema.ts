@@ -216,6 +216,7 @@ export const notifications = sqliteTable("notifications", {
       "content_moderation",
       "check_in_activity",
       "system",
+      "push_notification",
     ],
   }).notNull(),
   title: text("title").notNull(),
