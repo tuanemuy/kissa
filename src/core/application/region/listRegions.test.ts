@@ -111,9 +111,10 @@ describe("listRegions", () => {
         updatedAt: new Date(),
       };
 
-      const publicRegions = testRegions.filter(r => r.isPublic);
+      const publicRegions = testRegions.filter((r) => r.isPublic);
       context.regionRepository = {
-        list: async () => ok({ items: publicRegions, count: publicRegions.length }),
+        list: async () =>
+          ok({ items: publicRegions, count: publicRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       context.userRepository = {
@@ -134,7 +135,7 @@ describe("listRegions", () => {
         const { items, count } = result.value;
         expect(items).toHaveLength(2); // Only public regions
         expect(count).toBe(2);
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
       }
     });
 
@@ -150,7 +151,7 @@ describe("listRegions", () => {
       if (result.isOk()) {
         const { items } = result.value;
         expect(items).toHaveLength(3); // All regions including private
-        expect(items.some(r => !r.isPublic)).toBe(true);
+        expect(items.some((r) => !r.isPublic)).toBe(true);
       }
     });
   });
@@ -250,9 +251,10 @@ describe("listRegions", () => {
 
   describe("Anonymous access", () => {
     it("should allow anonymous listing of public regions", async () => {
-      const publicRegions = testRegions.filter(r => r.isPublic);
+      const publicRegions = testRegions.filter((r) => r.isPublic);
       context.regionRepository = {
-        list: async () => ok({ items: publicRegions, count: publicRegions.length }),
+        list: async () =>
+          ok({ items: publicRegions, count: publicRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const query = {
@@ -264,16 +266,19 @@ describe("listRegions", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const { items } = result.value;
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
       }
     });
   });
 
   describe("Filtering and search", () => {
     it("should filter by region name", async () => {
-      const filteredRegions = testRegions.filter(r => r.name.includes("Public"));
+      const filteredRegions = testRegions.filter((r) =>
+        r.name.includes("Public"),
+      );
       context.regionRepository = {
-        list: async () => ok({ items: filteredRegions, count: filteredRegions.length }),
+        list: async () =>
+          ok({ items: filteredRegions, count: filteredRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const query = {
@@ -288,7 +293,7 @@ describe("listRegions", () => {
         const { items, count } = result.value;
         expect(items).toHaveLength(2);
         expect(count).toBe(2);
-        expect(items.every(r => r.name.includes("Public"))).toBe(true);
+        expect(items.every((r) => r.name.includes("Public"))).toBe(true);
       }
     });
 

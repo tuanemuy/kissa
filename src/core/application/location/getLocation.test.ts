@@ -110,7 +110,11 @@ describe("getLocation", () => {
         },
       } as Partial<typeof context.userRepository>;
 
-      const result = await getLocation(context, visitorUser.id, publicLocation.id);
+      const result = await getLocation(
+        context,
+        visitorUser.id,
+        publicLocation.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -122,7 +126,11 @@ describe("getLocation", () => {
     });
 
     it("should allow region creator to view private location", async () => {
-      const result = await getLocation(context, editorUser.id, privateLocation.id);
+      const result = await getLocation(
+        context,
+        editorUser.id,
+        privateLocation.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -147,19 +155,29 @@ describe("getLocation", () => {
         },
       } as Partial<typeof context.userRepository>;
 
-      const result = await getLocation(context, visitorUser.id, privateLocation.id);
+      const result = await getLocation(
+        context,
+        visitorUser.id,
+        privateLocation.id,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Location not found or not accessible");
+        expect(result.error.message).toBe(
+          "Location not found or not accessible",
+        );
       }
     });
   });
 
   describe("SPEC-INV-3: Locations in editor regions (Alloy constraint)", () => {
     it("should verify location belongs to editor-created region", async () => {
-      const result = await getLocation(context, editorUser.id, publicLocation.id);
+      const result = await getLocation(
+        context,
+        editorUser.id,
+        publicLocation.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -181,7 +199,9 @@ describe("getLocation", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Location not found or not accessible");
+        expect(result.error.message).toBe(
+          "Location not found or not accessible",
+        );
       }
     });
 
@@ -205,7 +225,11 @@ describe("getLocation", () => {
       mockLocationRepository.findById = async () =>
         err(new RepositoryError("Database error"));
 
-      const result = await getLocation(context, editorUser.id, publicLocation.id);
+      const result = await getLocation(
+        context,
+        editorUser.id,
+        publicLocation.id,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -232,14 +256,20 @@ describe("getLocation", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Location not found or not accessible");
+        expect(result.error.message).toBe(
+          "Location not found or not accessible",
+        );
       }
     });
   });
 
   describe("Location data integrity", () => {
     it("should return complete location data", async () => {
-      const result = await getLocation(context, editorUser.id, publicLocation.id);
+      const result = await getLocation(
+        context,
+        editorUser.id,
+        publicLocation.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {

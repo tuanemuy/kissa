@@ -116,7 +116,11 @@ describe("getCheckIn", () => {
 
   describe("SPEC: Check-in access constraints from formal specifications", () => {
     it("should allow user to view their own check-in", async () => {
-      const result = await getCheckIn(context, visitorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        visitorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -130,7 +134,11 @@ describe("getCheckIn", () => {
 
     it("should allow others to view check-ins at public locations", async () => {
       // Anyone can view check-ins at public locations per REQ-V-013
-      const result = await getCheckIn(context, editorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        editorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -167,19 +175,29 @@ describe("getCheckIn", () => {
         },
       } as Partial<typeof context.locationRepository>;
 
-      const result = await getCheckIn(context, editorUser.id, privateCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        editorUser.id,
+        privateCheckIn.id,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(AuthorizationError);
-        expect(result.error.message).toBe("Not authorized to view this check-in");
+        expect(result.error.message).toBe(
+          "Not authorized to view this check-in",
+        );
       }
     });
   });
 
   describe("SPEC-INV-5: Check-ins at public locations only (Alloy constraint)", () => {
     it("should verify check-in location is public", async () => {
-      const result = await getCheckIn(context, visitorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        visitorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -194,7 +212,11 @@ describe("getCheckIn", () => {
   describe("TLA+ behavior validation", () => {
     it("should follow check-in content consistency from TLA+", async () => {
       // TLA+ CheckInContentConsistency invariant
-      const result = await getCheckIn(context, visitorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        visitorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -246,7 +268,11 @@ describe("getCheckIn", () => {
       mockCheckInRepository.findById = async () =>
         err(new RepositoryError("Database error"));
 
-      const result = await getCheckIn(context, visitorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        visitorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -279,7 +305,11 @@ describe("getCheckIn", () => {
 
   describe("Check-in data integrity", () => {
     it("should return complete check-in data", async () => {
-      const result = await getCheckIn(context, visitorUser.id, visitorCheckIn.id);
+      const result = await getCheckIn(
+        context,
+        visitorUser.id,
+        visitorCheckIn.id,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {

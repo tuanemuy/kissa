@@ -1,4 +1,7 @@
-import type { Notification, NotificationId } from "@/core/domain/notification/types";
+import type {
+  Notification,
+  NotificationId,
+} from "@/core/domain/notification/types";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
@@ -117,7 +120,10 @@ describe("createNotification", () => {
       if (result.isOk()) {
         const notification = result.value;
         expect(notification.type).toBe("moderation_result");
-        expect(notification.data).toEqual({ contentId: "region-1", status: "approved" });
+        expect(notification.data).toEqual({
+          contentId: "region-1",
+          status: "approved",
+        });
       }
     });
 
@@ -135,7 +141,9 @@ describe("createNotification", () => {
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Cannot send notification to inactive user");
+        expect(result.error.message).toBe(
+          "Cannot send notification to inactive user",
+        );
       }
     });
   });
@@ -194,7 +202,11 @@ describe("createNotification", () => {
         type: "moderation_result",
         title: "Content Moderation Result",
         message: "Your content has been rejected",
-        data: { contentId: "checkin-1", status: "rejected", reason: "inappropriate" },
+        data: {
+          contentId: "checkin-1",
+          status: "rejected",
+          reason: "inappropriate",
+        },
       };
 
       context.notificationRepository = {
@@ -206,7 +218,11 @@ describe("createNotification", () => {
         type: "moderation_result" as const,
         title: "Content Moderation Result",
         message: "Your content has been rejected",
-        data: { contentId: "checkin-1", status: "rejected", reason: "inappropriate" },
+        data: {
+          contentId: "checkin-1",
+          status: "rejected",
+          reason: "inappropriate",
+        },
       };
 
       const result = await createNotification(context, input);
@@ -346,7 +362,10 @@ describe("createNotification", () => {
         type: "system",
         title: "System Maintenance",
         message: "System will be under maintenance from 2AM to 4AM",
-        data: { maintenanceStart: "2024-02-01T02:00:00Z", maintenanceEnd: "2024-02-01T04:00:00Z" },
+        data: {
+          maintenanceStart: "2024-02-01T02:00:00Z",
+          maintenanceEnd: "2024-02-01T04:00:00Z",
+        },
       };
 
       context.notificationRepository = {
@@ -358,7 +377,10 @@ describe("createNotification", () => {
         type: "system" as const,
         title: "System Maintenance",
         message: "System will be under maintenance from 2AM to 4AM",
-        data: { maintenanceStart: "2024-02-01T02:00:00Z", maintenanceEnd: "2024-02-01T04:00:00Z" },
+        data: {
+          maintenanceStart: "2024-02-01T02:00:00Z",
+          maintenanceEnd: "2024-02-01T04:00:00Z",
+        },
       };
 
       const result = await createNotification(context, input);

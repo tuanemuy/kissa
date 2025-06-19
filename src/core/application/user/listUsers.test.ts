@@ -79,9 +79,10 @@ describe("listUsers", () => {
     });
 
     it("should filter users by role", async () => {
-      const filteredUsers = testUsers.filter(user => user.role === "editor");
+      const filteredUsers = testUsers.filter((user) => user.role === "editor");
       context.userRepository = {
-        list: async () => ok({ items: filteredUsers, count: filteredUsers.length }),
+        list: async () =>
+          ok({ items: filteredUsers, count: filteredUsers.length }),
       } as Partial<typeof context.userRepository>;
 
       const query = {
@@ -101,9 +102,12 @@ describe("listUsers", () => {
     });
 
     it("should filter users by subscription", async () => {
-      const filteredUsers = testUsers.filter(user => user.subscription === "free");
+      const filteredUsers = testUsers.filter(
+        (user) => user.subscription === "free",
+      );
       context.userRepository = {
-        list: async () => ok({ items: filteredUsers, count: filteredUsers.length }),
+        list: async () =>
+          ok({ items: filteredUsers, count: filteredUsers.length }),
       } as Partial<typeof context.userRepository>;
 
       const query = {

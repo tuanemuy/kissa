@@ -31,7 +31,11 @@ describe("performHealthCheck", () => {
     timestamp: new Date(),
     services: {
       database: { status: "healthy", responseTime: 15 },
-      redis: { status: "unhealthy", responseTime: 5000, error: "Connection timeout" },
+      redis: {
+        status: "unhealthy",
+        responseTime: 5000,
+        error: "Connection timeout",
+      },
       fileStorage: { status: "healthy", responseTime: 25 },
       emailService: { status: "degraded", responseTime: 1500 },
     },
@@ -116,7 +120,7 @@ describe("performHealthCheck", () => {
         expect(Object.keys(health.services)).toContain("redis");
         expect(Object.keys(health.services)).toContain("fileStorage");
         expect(Object.keys(health.services)).toContain("emailService");
-        
+
         // Verify metrics are within expected ranges
         expect(health.metrics.memoryUsage).toBeGreaterThanOrEqual(0);
         expect(health.metrics.memoryUsage).toBeLessThanOrEqual(100);
@@ -136,7 +140,11 @@ describe("performHealthCheck", () => {
         status: "unhealthy",
         services: {
           ...healthyResult.services,
-          database: { status: "unhealthy", responseTime: 10000, error: "Connection refused" },
+          database: {
+            status: "unhealthy",
+            responseTime: 10000,
+            error: "Connection refused",
+          },
         },
       };
 
@@ -252,7 +260,11 @@ describe("performHealthCheck", () => {
         timestamp: new Date(),
         services: {
           database: { status: "healthy", responseTime: 15 },
-          redis: { status: "unhealthy", responseTime: 0, error: "Service unavailable" },
+          redis: {
+            status: "unhealthy",
+            responseTime: 0,
+            error: "Service unavailable",
+          },
           fileStorage: { status: "healthy", responseTime: 25 },
           emailService: { status: "healthy", responseTime: 100 },
         },

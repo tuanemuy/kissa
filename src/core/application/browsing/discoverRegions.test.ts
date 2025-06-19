@@ -72,7 +72,8 @@ describe("discoverRegions", () => {
         },
       } as Partial<typeof context.userRepository>,
       regionRepository: {
-        discover: async () => ok({ items: publicRegions, count: publicRegions.length }),
+        discover: async () =>
+          ok({ items: publicRegions, count: publicRegions.length }),
       } as Partial<typeof context.regionRepository>,
     } as Context;
   });
@@ -90,7 +91,7 @@ describe("discoverRegions", () => {
         const { items, count } = result.value;
         expect(items).toHaveLength(3);
         expect(count).toBe(3);
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
         expect(items[0].name).toBe("Tokyo Central");
         expect(items[1].name).toBe("Shibuya District");
         expect(items[2].name).toBe("Akihabara Electronics");
@@ -109,14 +110,17 @@ describe("discoverRegions", () => {
         const { items, count } = result.value;
         expect(items).toHaveLength(3);
         expect(count).toBe(3);
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
       }
     });
 
     it("should filter regions by keyword", async () => {
-      const tokyoRegions = publicRegions.filter(r => r.name.includes("Tokyo"));
+      const tokyoRegions = publicRegions.filter((r) =>
+        r.name.includes("Tokyo"),
+      );
       context.regionRepository = {
-        discover: async () => ok({ items: tokyoRegions, count: tokyoRegions.length }),
+        discover: async () =>
+          ok({ items: tokyoRegions, count: tokyoRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const query = {
@@ -144,9 +148,12 @@ describe("discoverRegions", () => {
         filter: { keyword: "District" },
       };
 
-      const districtRegions = publicRegions.filter(r => r.name.includes("District"));
+      const districtRegions = publicRegions.filter((r) =>
+        r.name.includes("District"),
+      );
       context.regionRepository = {
-        discover: async () => ok({ items: districtRegions, count: districtRegions.length }),
+        discover: async () =>
+          ok({ items: districtRegions, count: districtRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const result = await discoverRegions(context, editorUser.id, query);
@@ -155,7 +162,7 @@ describe("discoverRegions", () => {
       if (result.isOk()) {
         const { items } = result.value;
         // Verify TLA+ constraint: regionStates[r].visibility = "public"
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
         expect(items[0].name).toBe("Shibuya District");
       }
     });
@@ -173,11 +180,12 @@ describe("discoverRegions", () => {
         },
       };
 
-      const nearbyRegions = publicRegions.filter(r => 
-        r.latitude !== null && Math.abs(r.latitude - 35.6762) < 0.1
+      const nearbyRegions = publicRegions.filter(
+        (r) => r.latitude !== null && Math.abs(r.latitude - 35.6762) < 0.1,
       );
       context.regionRepository = {
-        discover: async () => ok({ items: nearbyRegions, count: nearbyRegions.length }),
+        discover: async () =>
+          ok({ items: nearbyRegions, count: nearbyRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const result = await discoverRegions(context, editorUser.id, query);
@@ -187,7 +195,7 @@ describe("discoverRegions", () => {
         const { items } = result.value;
         // Verify proximity filtering
         expect(items.length).toBeGreaterThan(0);
-        expect(items.every(r => r.latitude !== null)).toBe(true);
+        expect(items.every((r) => r.latitude !== null)).toBe(true);
       }
     });
   });
@@ -206,7 +214,7 @@ describe("discoverRegions", () => {
       if (result.isOk()) {
         const { items } = result.value;
         // All discovered regions must be public
-        expect(items.every(r => r.isPublic)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
       }
     });
   });
@@ -217,7 +225,11 @@ describe("discoverRegions", () => {
         pagination: { page: -1, limit: 10 },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query as never);
+      const result = await discoverRegions(
+        context,
+        editorUser.id,
+        query as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -238,7 +250,11 @@ describe("discoverRegions", () => {
         },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query as never);
+      const result = await discoverRegions(
+        context,
+        editorUser.id,
+        query as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -306,10 +322,11 @@ describe("discoverRegions", () => {
 
     it("should sort regions by creation date", async () => {
       const sortedRegions = [...publicRegions].sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
       );
       context.regionRepository = {
-        discover: async () => ok({ items: sortedRegions, count: sortedRegions.length }),
+        discover: async () =>
+          ok({ items: sortedRegions, count: sortedRegions.length }),
       } as Partial<typeof context.regionRepository>;
 
       const query = {

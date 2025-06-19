@@ -64,7 +64,12 @@ describe("updateUser", () => {
         email: "updated@example.com",
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -80,7 +85,12 @@ describe("updateUser", () => {
         role: "editor" as const,
       };
 
-      const result = await updateUser(context, adminUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        adminUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isOk()).toBe(true);
     });
@@ -105,7 +115,12 @@ describe("updateUser", () => {
         name: "Should Fail",
       };
 
-      const result = await updateUser(context, otherUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        otherUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -123,7 +138,12 @@ describe("updateUser", () => {
         profilePhotoUrl: "https://example.com/photo.jpg",
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isOk()).toBe(true);
     });
@@ -136,7 +156,12 @@ describe("updateUser", () => {
         email: "valid@example.com",
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input as never);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -151,7 +176,12 @@ describe("updateUser", () => {
         email: "invalid-email",
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input as never);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -210,7 +240,12 @@ describe("updateUser", () => {
         name: "Test Name",
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -226,7 +261,12 @@ describe("updateUser", () => {
         role: "editor" as const,
       };
 
-      const result = await updateUser(context, adminUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        adminUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isOk()).toBe(true);
     });
@@ -236,7 +276,12 @@ describe("updateUser", () => {
         role: "admin" as const,
       };
 
-      const result = await updateUser(context, targetUser.id, targetUser.id, input);
+      const result = await updateUser(
+        context,
+        targetUser.id,
+        targetUser.id,
+        input,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -266,7 +311,12 @@ describe("updateUser", () => {
         subscription: "premium" as const,
       };
 
-      const result = await updateUser(context, editorUser.id, editorUser.id, input);
+      const result = await updateUser(
+        context,
+        editorUser.id,
+        editorUser.id,
+        input,
+      );
 
       expect(result.isOk()).toBe(true);
     });

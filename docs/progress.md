@@ -370,3 +370,48 @@
 
 ### 重要な知見
 コア機能とアーキテクチャは非常に高品質で完成度が高く、ビジネス価値の提供は可能。しかし本番稼働には運用要件（監視・バックアップ・パフォーマンス）の実装が必須。
+
+## テスト実装進捗 🧪
+
+### テスト実装状況 (2025-06-19)
+- **実装済みテスト**: 22個のアプリケーションサービス (37%)
+- **未実装テスト**: 36個のアプリケーションサービス (63%)
+- **テスト対象**: 全58個のアプリケーションサービス
+
+### テスト実装済み機能 ✅
+**コア機能 (22ファイル)**
+- **User管理**: authenticateUser, createUser, getUserById, listUsers, updateUser, deleteUser
+- **Region管理**: createRegion, getRegion, listRegions, updateRegion  
+- **Location管理**: createLocation, getLocation, updateLocation
+- **CheckIn管理**: createCheckIn, getCheckIn
+- **Favorite管理**: manageFavorites, managePinnedRegions, getUserFavorites
+- **Admin機能**: getSystemStatistics
+- **Browsing機能**: discoverRegions
+- **Notification機能**: createNotification
+- **Monitoring機能**: performHealthCheck
+
+### テスト未実装機能 🔶
+**高優先度 (36ファイル)**
+- **Backup機能**: createBackup, scheduleBackups (2ファイル)
+- **Billing機能**: 決済・サブスクリプション管理 (5ファイル)
+- **CheckIn機能**: deleteCheckIn, listCheckIns, updateCheckIn (3ファイル)
+- **Location機能**: エディター招待・権限管理 (7ファイル)
+- **Moderation機能**: コンテンツ審査 (5ファイル)
+- **Monitoring機能**: アラート・メトリクス (3ファイル)
+- **Notification機能**: 通知配信・管理 (7ファイル)
+- **Region機能**: deleteRegion (1ファイル)
+- **User機能**: getSessionUser (1ファイル)
+- **Browsing機能**: discoverLocations (1ファイル)
+- **Favorite機能**: getUserPinnedRegions (1ファイル)
+
+### 形式手法による仕様との整合性 📋
+- **Alloy構造モデル**: 31個の不変条件、34個のワークフロー（22個成功）
+- **TLA+動作モデル**: 60+個のアクション、19個の不変条件、4個の時相特性
+- **基本機能**: 100%検証済み（仕様書ベース）
+- **テスト戦略**: 形式手法の仕様を完全に再現する単体テスト実装
+
+### 次の実装計画 📝
+1. **高優先度テスト**: CheckIn削除・更新、Region削除、Location削除
+2. **中優先度テスト**: Billing・Notification・Moderation機能  
+3. **統合テスト**: 形式手法による仕様の検証テスト
+4. **品質保証**: Vitest実行、リンター対応、型安全性確保

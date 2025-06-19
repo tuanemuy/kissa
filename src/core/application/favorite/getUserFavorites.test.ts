@@ -113,7 +113,8 @@ describe("getUserFavorites", () => {
         },
       } as Partial<typeof context.userRepository>,
       favoriteRepository: {
-        listByUser: async () => ok({ items: testFavorites, count: testFavorites.length }),
+        listByUser: async () =>
+          ok({ items: testFavorites, count: testFavorites.length }),
       } as Partial<typeof context.favoriteRepository>,
     } as Context;
   });
@@ -133,7 +134,7 @@ describe("getUserFavorites", () => {
         expect(count).toBe(2);
         expect(items[0].targetType).toBe("region");
         expect(items[1].targetType).toBe("location");
-        expect(items.every(f => f.userId === visitorUser.id)).toBe(true);
+        expect(items.every((f) => f.userId === visitorUser.id)).toBe(true);
       }
     });
 
@@ -150,7 +151,8 @@ describe("getUserFavorites", () => {
       ];
 
       context.favoriteRepository = {
-        listByUser: async () => ok({ items: editorFavorites, count: editorFavorites.length }),
+        listByUser: async () =>
+          ok({ items: editorFavorites, count: editorFavorites.length }),
       } as Partial<typeof context.favoriteRepository>;
 
       const query = {
@@ -214,7 +216,7 @@ describe("getUserFavorites", () => {
       if (result.isOk()) {
         const { items } = result.value;
         // Verify user role constraints from TLA+
-        expect(items.every(f => f.userId === visitorUser.id)).toBe(true);
+        expect(items.every((f) => f.userId === visitorUser.id)).toBe(true);
       }
     });
   });
@@ -225,7 +227,11 @@ describe("getUserFavorites", () => {
         pagination: { page: -1, limit: 10 },
       };
 
-      const result = await getUserFavorites(context, visitorUser.id, query as never);
+      const result = await getUserFavorites(
+        context,
+        visitorUser.id,
+        query as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -239,7 +245,11 @@ describe("getUserFavorites", () => {
         pagination: { page: 1, limit: 0 },
       };
 
-      const result = await getUserFavorites(context, visitorUser.id, query as never);
+      const result = await getUserFavorites(
+        context,
+        visitorUser.id,
+        query as never,
+      );
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -290,9 +300,12 @@ describe("getUserFavorites", () => {
 
   describe("Filtering and pagination", () => {
     it("should filter favorites by target type", async () => {
-      const regionFavorites = testFavorites.filter(f => f.targetType === "region");
+      const regionFavorites = testFavorites.filter(
+        (f) => f.targetType === "region",
+      );
       context.favoriteRepository = {
-        listByUser: async () => ok({ items: regionFavorites, count: regionFavorites.length }),
+        listByUser: async () =>
+          ok({ items: regionFavorites, count: regionFavorites.length }),
       } as Partial<typeof context.favoriteRepository>;
 
       const query = {
