@@ -1,0 +1,122 @@
+[
+  {
+    "name": "High Response Time",
+    "metric": "http_request_duration_seconds",
+    "condition": "avg_over_time(5m) > 2",
+    "threshold": 2,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Critical Response Time",
+    "metric": "http_request_duration_seconds",
+    "condition": "avg_over_time(5m) > 5",
+    "threshold": 5,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "High Error Rate",
+    "metric": "http_requests_total",
+    "condition": "rate(status_code=~'5..'[5m]) > 0.05",
+    "threshold": 0.05,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Critical Error Rate",
+    "metric": "http_requests_total",
+    "condition": "rate(status_code=~'5..'[5m]) > 0.1",
+    "threshold": 0.1,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "Database Connection Failure",
+    "metric": "health_check_status",
+    "condition": "service='database' and value == 0",
+    "threshold": 0,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "High Database Query Time",
+    "metric": "database_query_duration_seconds",
+    "condition": "avg_over_time(5m) > 1",
+    "threshold": 1,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Low Disk Space",
+    "metric": "system_disk_usage_percent",
+    "condition": "value > 80",
+    "threshold": 80,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Critical Disk Space",
+    "metric": "system_disk_usage_percent",
+    "condition": "value > 90",
+    "threshold": 90,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "High Memory Usage",
+    "metric": "system_memory_usage_percent",
+    "condition": "value > 85",
+    "threshold": 85,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Critical Memory Usage",
+    "metric": "system_memory_usage_percent",
+    "condition": "value > 95",
+    "threshold": 95,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "High CPU Usage",
+    "metric": "system_cpu_usage_percent",
+    "condition": "avg_over_time(5m) > 80",
+    "threshold": 80,
+    "severity": "warning",
+    "enabled": true
+  },
+  {
+    "name": "Critical CPU Usage",
+    "metric": "system_cpu_usage_percent",
+    "condition": "avg_over_time(5m) > 95",
+    "threshold": 95,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "Payment Gateway Failure",
+    "metric": "business_payment_failures_total",
+    "condition": "rate(5m) > 0.02",
+    "threshold": 0.02,
+    "severity": "critical",
+    "enabled": true
+  },
+  {
+    "name": "Low Check-in Rate",
+    "metric": "business_checkins_total",
+    "condition": "rate(1h) < 0.1",
+    "threshold": 0.1,
+    "severity": "info",
+    "enabled": true
+  },
+  {
+    "name": "External API Failure",
+    "metric": "health_check_status",
+    "condition": "service='external_apis' and value == 0",
+    "threshold": 0,
+    "severity": "warning",
+    "enabled": true
+  }
+]
