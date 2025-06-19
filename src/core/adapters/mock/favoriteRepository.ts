@@ -60,6 +60,7 @@ export class MockFavoriteRepository implements FavoriteRepository {
       userId: params.userId,
       regionId: params.regionId || null,
       locationId: params.locationId || null,
+      targetType: params.regionId ? "region" : "location",
       createdAt: new Date(),
     };
 

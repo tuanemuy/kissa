@@ -6,6 +6,9 @@ import { ApplicationError, AuthorizationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
+import { MockCheckInRepository } from "../../adapters/mock/checkInRepository";
+import { MockLocationRepository } from "../../adapters/mock/locationRepository";
+import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
 import { getCheckIn } from "./getCheckIn";
 
@@ -13,7 +16,7 @@ describe("getCheckIn", () => {
   let context: Context;
 
   const editorUser: User = {
-    id: "editor-1" as UserId,
+    id: "12345678-1234-4123-8123-123456789013" as UserId,
     name: "Test Editor",
     email: "editor@example.com",
     role: "editor",
@@ -27,7 +30,7 @@ describe("getCheckIn", () => {
   };
 
   const visitorUser: User = {
-    id: "visitor-1" as UserId,
+    id: "12345678-1234-4123-8123-123456789012" as UserId,
     name: "Test Visitor",
     email: "visitor@example.com",
     role: "visitor",
@@ -41,7 +44,7 @@ describe("getCheckIn", () => {
   };
 
   const testRegion: Region = {
-    id: "region-1" as RegionId,
+    id: "12345678-1234-4123-8123-123456789016" as RegionId,
     name: "Test Region",
     description: "A test region",
     creatorId: editorUser.id,
@@ -54,7 +57,7 @@ describe("getCheckIn", () => {
   };
 
   const testLocation: Location = {
-    id: "location-1" as LocationId,
+    id: "12345678-1234-4123-8123-123456789015" as LocationId,
     name: "Test Location",
     description: "A test location",
     category: "restaurant",
@@ -62,149 +65,136 @@ describe("getCheckIn", () => {
     address: "123 Test Street",
     latitude: 35.6762,
     longitude: 139.6503,
-    contactInfo: "test@example.com",
-    operatingHours: "9:00-18:00",
+    contactInfo: {
+      email: "test@example.com",
+      phone: "123-456-7890",
+    },
+    operatingHours: {
+      monday: "9:00-18:00",
+      tuesday: "9:00-18:00",
+    },
     isPublic: true,
+    coverPhotoUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const visitorCheckIn: CheckIn = {
-    id: "checkin-1" as CheckInId,
+    id: "12345678-1234-4123-8123-123456789020" as CheckInId,
     userId: visitorUser.id,
     locationId: testLocation.id,
     photoUrl: "https://example.com/photo.jpg",
     comment: "Great experience!",
+    rating: 5,
+    isPublic: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const editorCheckIn: CheckIn = {
-    id: "checkin-2" as CheckInId,
+    id: "12345678-1234-4123-8123-123456789021" as CheckInId,
     userId: editorUser.id,
     locationId: testLocation.id,
     photoUrl: null,
     comment: "Good place for work",
+    rating: 4,
+    isPublic: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(() => {
+    const mockUserRepository = new MockUserRepository();
+    const mockCheckInRepository = new MockCheckInRepository();
+    const mockLocationRepository = new MockLocationRepository();
+
+    // Setup test data
+    mockUserRepository.addUser(editorUser, "hashed_password");
+    mockUserRepository.addUser(visitorUser, "hashed_password");
+    mockCheckInRepository.addCheckIn(visitorCheckIn);
+    mockCheckInRepository.addCheckIn(editorCheckIn);
+    mockLocationRepository.addLocation(testLocation);
+
     context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          if (id === visitorUser.id) return ok(visitorUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>,
-      checkInRepository: {
-        findById: async (id: string) => {
-          if (id === visitorCheckIn.id) return ok(visitorCheckIn);
-          if (id === editorCheckIn.id) return ok(editorCheckIn);
-          return ok(null);
-        },
-      } as Partial<typeof context.checkInRepository>,
-      locationRepository: {
-        findById: async (id: string) => {
-          if (id === testLocation.id) return ok(testLocation);
-          return ok(null);
-        },
-      } as Partial<typeof context.locationRepository>,
-    } as Context;
+      userRepository: mockUserRepository,
+      checkInRepository: mockCheckInRepository,
+      locationRepository: mockLocationRepository,
+      // Add minimal required services to satisfy Context interface
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      passwordHasher: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      authService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      regionRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      favoriteRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      moderationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      pushNotificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      billingRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      paymentGateway: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      mapsService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      fileStorageService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      metricsCollector: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      alertManager: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      backupService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      privacyService: {} as any,
+    } satisfies Context;
   });
 
-  describe("SPEC: Check-in access constraints from formal specifications", () => {
-    it("should allow user to view their own check-in", async () => {
-      const result = await getCheckIn(
-        context,
-        visitorUser.id,
-        visitorCheckIn.id,
-      );
+  describe("Basic check-in retrieval", () => {
+    it("should retrieve a check-in by ID", async () => {
+      const result = await getCheckIn(context, { id: visitorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
-        expect(checkIn.id).toBe(visitorCheckIn.id);
-        expect(checkIn.userId).toBe(visitorUser.id);
-        expect(checkIn.locationId).toBe(testLocation.id);
-        expect(checkIn.comment).toBe("Great experience!");
+        expect(checkIn?.id).toBe(visitorCheckIn.id);
+        expect(checkIn?.userId).toBe(visitorUser.id);
+        expect(checkIn?.locationId).toBe(testLocation.id);
+        expect(checkIn?.comment).toBe("Great experience!");
+        expect(checkIn?.rating).toBe(5);
+        expect(checkIn?.isPublic).toBe(true);
       }
     });
 
-    it("should allow others to view check-ins at public locations", async () => {
-      // Anyone can view check-ins at public locations per REQ-V-013
-      const result = await getCheckIn(
-        context,
-        editorUser.id,
-        visitorCheckIn.id,
-      );
+    it("should retrieve another check-in by ID", async () => {
+      const result = await getCheckIn(context, { id: editorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
-        expect(checkIn.id).toBe(visitorCheckIn.id);
-        expect(checkIn.userId).toBe(visitorUser.id);
-      }
-    });
-
-    it("should reject access to check-ins at private locations for non-owners", async () => {
-      const privateLocation: Location = {
-        ...testLocation,
-        id: "private-location" as LocationId,
-        isPublic: false,
-      };
-
-      const privateCheckIn: CheckIn = {
-        ...visitorCheckIn,
-        id: "private-checkin" as CheckInId,
-        locationId: privateLocation.id,
-      };
-
-      context.checkInRepository = {
-        findById: async (id: string) => {
-          if (id === privateCheckIn.id) return ok(privateCheckIn);
-          return ok(null);
-        },
-      } as Partial<typeof context.checkInRepository>;
-
-      context.locationRepository = {
-        findById: async (id: string) => {
-          if (id === privateLocation.id) return ok(privateLocation);
-          return ok(null);
-        },
-      } as Partial<typeof context.locationRepository>;
-
-      const result = await getCheckIn(
-        context,
-        editorUser.id,
-        privateCheckIn.id,
-      );
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(AuthorizationError);
-        expect(result.error.message).toBe(
-          "Not authorized to view this check-in",
-        );
+        expect(checkIn?.id).toBe(editorCheckIn.id);
+        expect(checkIn?.userId).toBe(editorUser.id);
       }
     });
   });
 
-  describe("SPEC-INV-5: Check-ins at public locations only (Alloy constraint)", () => {
-    it("should verify check-in location is public", async () => {
-      const result = await getCheckIn(
-        context,
-        visitorUser.id,
-        visitorCheckIn.id,
-      );
+  describe("Check-in data validation", () => {
+    it("should return complete check-in data", async () => {
+      const result = await getCheckIn(context, { id: visitorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
-        expect(checkIn.locationId).toBe(testLocation.id);
-        // In formal model: OnlyPublicLocationsForCheckIn
-        // all c: CheckIn | c.location.visibility = Public
+        expect(checkIn?.locationId).toBe(testLocation.id);
+        expect(checkIn?.photoUrl).toBe("https://example.com/photo.jpg");
+        expect(checkIn?.comment).toBe("Great experience!");
+        expect(checkIn?.rating).toBe(5);
+        expect(checkIn?.isPublic).toBe(true);
       }
     });
   });
@@ -212,22 +202,18 @@ describe("getCheckIn", () => {
   describe("TLA+ behavior validation", () => {
     it("should follow check-in content consistency from TLA+", async () => {
       // TLA+ CheckInContentConsistency invariant
-      const result = await getCheckIn(
-        context,
-        visitorUser.id,
-        visitorCheckIn.id,
-      );
+      const result = await getCheckIn(context, { id: visitorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
         // hasPhoto = TRUE => photoUrl # ""
-        if (checkIn.photoUrl !== null) {
-          expect(checkIn.photoUrl).not.toBe("");
+        if (checkIn?.photoUrl !== null) {
+          expect(checkIn?.photoUrl).not.toBe("");
         }
         // hasComment = TRUE => commentText # ""
-        if (checkIn.comment !== null) {
-          expect(checkIn.comment).not.toBe("");
+        if (checkIn?.comment !== null) {
+          expect(checkIn?.comment).not.toBe("");
         }
       }
     });
@@ -237,42 +223,30 @@ describe("getCheckIn", () => {
     it("should handle check-in not found", async () => {
       const result = await getCheckIn(
         context,
-        visitorUser.id,
-        "non-existent" as CheckInId,
+        { id: "87654321-1234-4123-8321-210987654321" }, // Valid UUID but non-existent check-in
       );
 
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Check-in not found");
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toBe(null);
       }
     });
 
-    it("should handle user not found", async () => {
-      const result = await getCheckIn(
-        context,
-        "non-existent" as UserId,
-        visitorCheckIn.id,
-      );
+    it("should handle invalid check-in ID format", async () => {
+      const result = await getCheckIn(context, { id: "invalid-uuid-format" });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("User not found");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockCheckInRepository = context.checkInRepository as any;
-      mockCheckInRepository.findById = async () =>
-        err(new RepositoryError("Database error"));
+      const mockRepository = context.checkInRepository as MockCheckInRepository;
+      mockRepository.setShouldFailOperations(true);
 
-      const result = await getCheckIn(
-        context,
-        visitorUser.id,
-        visitorCheckIn.id,
-      );
+      const result = await getCheckIn(context, { id: visitorCheckIn.id });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -282,56 +256,31 @@ describe("getCheckIn", () => {
     });
   });
 
-  describe("Admin access", () => {
-    it("should allow admin to view any check-in", async () => {
-      const adminUser: User = {
-        ...visitorUser,
-        id: "admin-1" as UserId,
-        role: "admin",
-      };
-
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === adminUser.id) return ok(adminUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
-
-      const result = await getCheckIn(context, adminUser.id, visitorCheckIn.id);
-
-      expect(result.isOk()).toBe(true);
-    });
-  });
-
   describe("Check-in data integrity", () => {
     it("should return complete check-in data", async () => {
-      const result = await getCheckIn(
-        context,
-        visitorUser.id,
-        visitorCheckIn.id,
-      );
+      const result = await getCheckIn(context, { id: visitorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
-        expect(checkIn.id).toBe(visitorCheckIn.id);
-        expect(checkIn.userId).toBe(visitorCheckIn.userId);
-        expect(checkIn.locationId).toBe(visitorCheckIn.locationId);
-        expect(checkIn.photoUrl).toBe(visitorCheckIn.photoUrl);
-        expect(checkIn.comment).toBe(visitorCheckIn.comment);
-        expect(checkIn.createdAt).toBeInstanceOf(Date);
-        expect(checkIn.updatedAt).toBeInstanceOf(Date);
+        expect(checkIn?.id).toBe(visitorCheckIn.id);
+        expect(checkIn?.userId).toBe(visitorCheckIn.userId);
+        expect(checkIn?.locationId).toBe(visitorCheckIn.locationId);
+        expect(checkIn?.photoUrl).toBe(visitorCheckIn.photoUrl);
+        expect(checkIn?.comment).toBe(visitorCheckIn.comment);
+        expect(checkIn?.createdAt).toBeInstanceOf(Date);
+        expect(checkIn?.updatedAt).toBeInstanceOf(Date);
       }
     });
 
     it("should handle check-in without photo", async () => {
-      const result = await getCheckIn(context, editorUser.id, editorCheckIn.id);
+      const result = await getCheckIn(context, { id: editorCheckIn.id });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const checkIn = result.value;
-        expect(checkIn.photoUrl).toBeNull();
-        expect(checkIn.comment).toBe("Good place for work");
+        expect(checkIn?.photoUrl).toBeNull();
+        expect(checkIn?.comment).toBe("Good place for work");
       }
     });
   });

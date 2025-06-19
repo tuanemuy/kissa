@@ -20,8 +20,8 @@ export const notificationSchema = z.object({
   id: notificationIdSchema,
   userId: userIdSchema,
   type: notificationTypeSchema,
-  title: z.string().max(200),
-  message: z.string().max(1000),
+  title: z.string().min(1).max(200),
+  message: z.string().min(1).max(1000),
   data: z.record(z.string(), z.unknown()).nullable(), // JSON data
   isRead: z.boolean(),
   createdAt: z.date(),
@@ -32,8 +32,8 @@ export type Notification = z.infer<typeof notificationSchema>;
 export const createNotificationParamsSchema = z.object({
   userId: userIdSchema,
   type: notificationTypeSchema,
-  title: z.string().max(200),
-  message: z.string().max(1000),
+  title: z.string().min(1).max(200),
+  message: z.string().min(1).max(1000),
   data: z.record(z.string(), z.unknown()).optional(),
 });
 export type CreateNotificationParams = z.infer<
@@ -116,8 +116,8 @@ export type PushNotificationJob = z.infer<typeof pushNotificationJobSchema>;
 
 export const sendPushNotificationParamsSchema = z.object({
   userId: userIdSchema,
-  title: z.string().max(200),
-  body: z.string().max(1000),
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(1000),
   data: z.record(z.string(), z.unknown()).optional(),
   channels: z.array(pushNotificationChannelSchema).optional(),
   priority: z.enum(["low", "normal", "high"]).default("normal"),

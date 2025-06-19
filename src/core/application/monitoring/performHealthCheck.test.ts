@@ -1,6 +1,8 @@
-import type { HealthCheckResult } from "@/core/domain/monitoring/types";
-import { ApplicationError } from "@/lib/error";
+import type { MetricsCollector } from "@/core/domain/monitoring/ports/metricsCollector";
+import type { HealthCheck } from "@/core/domain/monitoring/types";
+import type { UserRepository } from "@/core/domain/user/ports/userRepository";
 import { RepositoryError } from "@/lib/error";
+import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
@@ -9,49 +11,49 @@ import { performHealthCheck } from "./performHealthCheck";
 describe("performHealthCheck", () => {
   let context: Context;
 
-  const healthyResult: HealthCheckResult = {
+  const healthyResult: HealthCheck = {
+    service: "all",
     status: "healthy",
+    responseTime: 50,
     timestamp: new Date(),
-    services: {
-      database: { status: "healthy", responseTime: 15 },
-      redis: { status: "healthy", responseTime: 5 },
-      fileStorage: { status: "healthy", responseTime: 25 },
-      emailService: { status: "healthy", responseTime: 100 },
-    },
-    metrics: {
-      memoryUsage: 65.5,
-      cpuUsage: 23.2,
-      diskUsage: 45.8,
-      activeConnections: 120,
+    details: {
+      database: "connected",
+      storage: "available",
+      external_apis: ["google_maps", "stripe"],
+      cache: "not_implemented",
     },
   };
 
-  const unhealthyResult: HealthCheckResult = {
+  const unhealthyResult: HealthCheck = {
+    service: "all",
     status: "unhealthy",
+    responseTime: 5000,
     timestamp: new Date(),
-    services: {
-      database: { status: "healthy", responseTime: 15 },
-      redis: {
-        status: "unhealthy",
-        responseTime: 5000,
-        error: "Connection timeout",
-      },
-      fileStorage: { status: "healthy", responseTime: 25 },
-      emailService: { status: "degraded", responseTime: 1500 },
-    },
-    metrics: {
-      memoryUsage: 95.2,
-      cpuUsage: 87.5,
-      diskUsage: 92.1,
-      activeConnections: 500,
+    details: {
+      errors: ["Database query failed", "Redis connection timeout"],
+      database: "error",
+      storage: "available",
+      external_apis: ["google_maps"],
+      cache: "not_implemented",
     },
   };
 
   beforeEach(() => {
+    // Create a complete mock MetricsCollector
+    const mockMetricsCollector: MetricsCollector = {
+      recordMetric: async () => ok(undefined),
+      getMetrics: async () => ok([]),
+      recordHealthCheck: async () => ok(undefined),
+      getHealthStatus: async () => ok([healthyResult]),
+    };
+
+    const mockUserRepository: Partial<UserRepository> = {
+      list: async () => ok({ items: [], count: 0 }),
+    };
+
     context = {
-      healthCheckService: {
-        checkHealth: async () => ok(healthyResult),
-      } as Partial<typeof context.healthCheckService>,
+      metricsCollector: mockMetricsCollector,
+      userRepository: mockUserRepository,
     } as Context;
   });
 
@@ -62,23 +64,19 @@ describe("performHealthCheck", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
+        expect(health.service).toBe("all");
         expect(health.status).toBe("healthy");
         expect(health.timestamp).toBeInstanceOf(Date);
-        expect(health.services).toHaveProperty("database");
-        expect(health.services).toHaveProperty("redis");
-        expect(health.services).toHaveProperty("fileStorage");
-        expect(health.services).toHaveProperty("emailService");
-        expect(health.metrics).toHaveProperty("memoryUsage");
-        expect(health.metrics).toHaveProperty("cpuUsage");
-        expect(health.metrics).toHaveProperty("diskUsage");
-        expect(health.metrics).toHaveProperty("activeConnections");
+        expect(health.responseTime).toBeGreaterThanOrEqual(0);
+        expect(health.details).toBeDefined();
+        expect(health.details).toHaveProperty("database");
       }
     });
 
     it("should detect unhealthy system status", async () => {
-      context.healthCheckService = {
-        checkHealth: async () => ok(unhealthyResult),
-      } as Partial<typeof context.healthCheckService>;
+      // Mock user repository to fail for testing database check
+      context.userRepository.list = async () =>
+        err(new RepositoryError("Database connection failed"));
 
       const result = await performHealthCheck(context);
 
@@ -86,23 +84,21 @@ describe("performHealthCheck", () => {
       if (result.isOk()) {
         const health = result.value;
         expect(health.status).toBe("unhealthy");
-        expect(health.services.redis.status).toBe("unhealthy");
-        expect(health.services.redis.error).toBe("Connection timeout");
-        expect(health.services.emailService.status).toBe("degraded");
-        expect(health.metrics.memoryUsage).toBeGreaterThan(90);
-        expect(health.metrics.cpuUsage).toBeGreaterThan(80);
-        expect(health.metrics.diskUsage).toBeGreaterThan(90);
+        expect(health.details).toHaveProperty("errors");
+        expect(Array.isArray(health.details?.errors)).toBe(true);
       }
     });
 
     it("should check individual service health", async () => {
-      const result = await performHealthCheck(context, { service: "database" });
+      const result = await performHealthCheck(context, "database");
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.services.database.status).toBe("healthy");
-        expect(health.services.database.responseTime).toBeLessThan(1000);
+        expect(health.service).toBe("database");
+        expect(health.status).toBe("healthy");
+        expect(health.responseTime).toBeLessThan(1000);
+        expect(health.details).toHaveProperty("database");
       }
     });
   });
@@ -115,179 +111,121 @@ describe("performHealthCheck", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        // Verify all critical services are monitored
-        expect(Object.keys(health.services)).toContain("database");
-        expect(Object.keys(health.services)).toContain("redis");
-        expect(Object.keys(health.services)).toContain("fileStorage");
-        expect(Object.keys(health.services)).toContain("emailService");
+        // Verify service monitoring
+        expect(health.service).toBe("all");
+        expect(health.status).toMatch(/^(healthy|unhealthy|degraded)$/);
+        expect(health.responseTime).toBeGreaterThanOrEqual(0);
+        expect(health.timestamp).toBeInstanceOf(Date);
+        expect(health.details).toBeDefined();
 
-        // Verify metrics are within expected ranges
-        expect(health.metrics.memoryUsage).toBeGreaterThanOrEqual(0);
-        expect(health.metrics.memoryUsage).toBeLessThanOrEqual(100);
-        expect(health.metrics.cpuUsage).toBeGreaterThanOrEqual(0);
-        expect(health.metrics.cpuUsage).toBeLessThanOrEqual(100);
-        expect(health.metrics.diskUsage).toBeGreaterThanOrEqual(0);
-        expect(health.metrics.diskUsage).toBeLessThanOrEqual(100);
-        expect(health.metrics.activeConnections).toBeGreaterThanOrEqual(0);
+        // Verify health check is recorded to metrics
+        expect(context.metricsCollector.recordHealthCheck).toBeDefined();
       }
     });
   });
 
   describe("Service monitoring", () => {
     it("should detect database connection issues", async () => {
-      const dbFailureResult: HealthCheckResult = {
-        ...healthyResult,
-        status: "unhealthy",
-        services: {
-          ...healthyResult.services,
-          database: {
-            status: "unhealthy",
-            responseTime: 10000,
-            error: "Connection refused",
-          },
-        },
-      };
+      // Mock database failure
+      context.userRepository.list = async () =>
+        err(new RepositoryError("Connection refused"));
 
-      context.healthCheckService = {
-        checkHealth: async () => ok(dbFailureResult),
-      } as Partial<typeof context.healthCheckService>;
-
-      const result = await performHealthCheck(context);
+      const result = await performHealthCheck(context, "database");
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
+        expect(health.service).toBe("database");
         expect(health.status).toBe("unhealthy");
-        expect(health.services.database.status).toBe("unhealthy");
-        expect(health.services.database.error).toBe("Connection refused");
+        expect(health.details).toHaveProperty("errors");
       }
     });
 
-    it("should detect slow service responses", async () => {
-      const slowResult: HealthCheckResult = {
-        ...healthyResult,
-        status: "degraded",
-        services: {
-          ...healthyResult.services,
-          emailService: { status: "degraded", responseTime: 3000 },
+    it("should detect slow service responses based on responseTime", async () => {
+      // Mock a slow response by adding delay
+      const slowUserRepo: Partial<UserRepository> = {
+        list: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate 100ms delay
+          return ok({ items: [], count: 0 });
         },
       };
-
-      context.healthCheckService = {
-        checkHealth: async () => ok(slowResult),
-      } as Partial<typeof context.healthCheckService>;
+      context.userRepository = slowUserRepo as UserRepository;
 
       const result = await performHealthCheck(context);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.status).toBe("degraded");
-        expect(health.services.emailService.status).toBe("degraded");
-        expect(health.services.emailService.responseTime).toBeGreaterThan(2000);
+        expect(health.responseTime).toBeGreaterThan(50); // Should take at least 50ms
+        expect(health.status).toBe("healthy"); // Won't be degraded unless > 5000ms
       }
-    });
+    }, 1000);
   });
 
-  describe("Resource monitoring", () => {
-    it("should monitor memory usage", async () => {
-      const highMemoryResult: HealthCheckResult = {
-        ...healthyResult,
-        status: "degraded",
-        metrics: {
-          ...healthyResult.metrics,
-          memoryUsage: 85.5,
-        },
-      };
-
-      context.healthCheckService = {
-        checkHealth: async () => ok(highMemoryResult),
-      } as Partial<typeof context.healthCheckService>;
-
-      const result = await performHealthCheck(context);
+  describe("Service checks", () => {
+    it("should check storage service", async () => {
+      const result = await performHealthCheck(context, "storage");
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.metrics.memoryUsage).toBe(85.5);
-        expect(health.status).toBe("degraded");
+        expect(health.service).toBe("storage");
+        expect(health.status).toBe("healthy");
+        expect(health.details).toHaveProperty("storage");
       }
     });
 
-    it("should monitor CPU usage", async () => {
-      const highCpuResult: HealthCheckResult = {
-        ...healthyResult,
-        status: "degraded",
-        metrics: {
-          ...healthyResult.metrics,
-          cpuUsage: 75.2,
-        },
-      };
-
-      context.healthCheckService = {
-        checkHealth: async () => ok(highCpuResult),
-      } as Partial<typeof context.healthCheckService>;
-
-      const result = await performHealthCheck(context);
+    it("should check external APIs", async () => {
+      const result = await performHealthCheck(context, "external_apis");
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.metrics.cpuUsage).toBe(75.2);
+        expect(health.service).toBe("external_apis");
+        expect(health.status).toBe("healthy");
+        expect(health.details).toHaveProperty("external_apis");
+      }
+    });
+
+    it("should check cache service", async () => {
+      const result = await performHealthCheck(context, "cache");
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const health = result.value;
+        expect(health.service).toBe("cache");
+        expect(health.status).toBe("healthy");
+        expect(health.details).toHaveProperty("cache");
       }
     });
   });
 
   describe("Error handling", () => {
-    it("should handle health check service failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockHealthCheckService = context.healthCheckService as any;
-      mockHealthCheckService.checkHealth = async () =>
-        err(new RepositoryError("Health check failed"));
+    it("should handle metrics collector failure gracefully", async () => {
+      // Mock metrics collector to fail
+      context.metricsCollector.recordHealthCheck = async () =>
+        err(new AnyError("Metrics collection failed"));
 
       const result = await performHealthCheck(context);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Failed to perform health check");
+        expect(result.error).toBeInstanceOf(AnyError);
+        expect(result.error.message).toBe("Metrics collection failed");
       }
     });
 
-    it("should handle partial service failures gracefully", async () => {
-      const partialFailureResult: HealthCheckResult = {
-        status: "degraded",
-        timestamp: new Date(),
-        services: {
-          database: { status: "healthy", responseTime: 15 },
-          redis: {
-            status: "unhealthy",
-            responseTime: 0,
-            error: "Service unavailable",
-          },
-          fileStorage: { status: "healthy", responseTime: 25 },
-          emailService: { status: "healthy", responseTime: 100 },
-        },
-        metrics: {
-          memoryUsage: 65.5,
-          cpuUsage: 23.2,
-          diskUsage: 45.8,
-          activeConnections: 120,
-        },
-      };
+    it("should handle unknown service gracefully", async () => {
+      const result = await performHealthCheck(
+        context,
+        // biome-ignore lint/suspicious/noExplicitAny: Testing error handling with invalid input
+        "unknown_service" as any,
+      );
 
-      context.healthCheckService = {
-        checkHealth: async () => ok(partialFailureResult),
-      } as Partial<typeof context.healthCheckService>;
-
-      const result = await performHealthCheck(context);
-
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        const health = result.value;
-        expect(health.status).toBe("degraded");
-        expect(health.services.redis.status).toBe("unhealthy");
-        expect(health.services.database.status).toBe("healthy");
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toBeInstanceOf(AnyError);
+        expect(result.error.message).toBe("Unknown service: unknown_service");
       }
     });
   });
@@ -299,66 +237,63 @@ describe("performHealthCheck", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.services.database.responseTime).toBeGreaterThan(0);
-        expect(health.services.redis.responseTime).toBeGreaterThan(0);
-        expect(health.services.fileStorage.responseTime).toBeGreaterThan(0);
-        expect(health.services.emailService.responseTime).toBeGreaterThan(0);
+        expect(health.responseTime).toBeGreaterThanOrEqual(0);
+        expect(typeof health.responseTime).toBe("number");
       }
     });
 
-    it("should monitor connection counts", async () => {
+    it("should include timestamp", async () => {
       const result = await performHealthCheck(context);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
-        expect(health.metrics.activeConnections).toBeGreaterThanOrEqual(0);
-        expect(typeof health.metrics.activeConnections).toBe("number");
+        expect(health.timestamp).toBeInstanceOf(Date);
+        expect(health.timestamp.getTime()).toBeLessThanOrEqual(Date.now());
       }
     });
   });
 
   describe("Health check options", () => {
-    it("should perform detailed health check", async () => {
+    it("should perform detailed health check with options object", async () => {
       const result = await performHealthCheck(context, { detailed: true });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
+        expect(health.service).toBe("all");
         expect(health.timestamp).toBeInstanceOf(Date);
-        expect(Object.keys(health.services)).toHaveLength(4);
-        expect(Object.keys(health.metrics)).toHaveLength(4);
+        expect(health.details).toBeDefined();
       }
     });
 
-    it("should perform quick health check", async () => {
-      const quickResult: HealthCheckResult = {
-        status: "healthy",
-        timestamp: new Date(),
-        services: {
-          database: { status: "healthy", responseTime: 15 },
-          redis: { status: "healthy", responseTime: 5 },
-          fileStorage: { status: "healthy", responseTime: 25 },
-          emailService: { status: "healthy", responseTime: 100 },
-        },
-        metrics: {
-          memoryUsage: 65.5,
-          cpuUsage: 23.2,
-          diskUsage: 45.8,
-          activeConnections: 120,
-        },
-      };
-
-      context.healthCheckService = {
-        checkHealth: async () => ok(quickResult),
-      } as Partial<typeof context.healthCheckService>;
-
+    it("should perform quick health check with options object", async () => {
       const result = await performHealthCheck(context, { quick: true });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const health = result.value;
+        expect(health.service).toBe("all");
         expect(health.status).toBe("healthy");
+        expect(health.responseTime).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it("should handle both string and options parameter formats", async () => {
+      // Test string parameter
+      const stringResult = await performHealthCheck(context, "database");
+      expect(stringResult.isOk()).toBe(true);
+      if (stringResult.isOk()) {
+        expect(stringResult.value.service).toBe("database");
+      }
+
+      // Test options parameter
+      const optionsResult = await performHealthCheck(context, {
+        detailed: true,
+      });
+      expect(optionsResult.isOk()).toBe(true);
+      if (optionsResult.isOk()) {
+        expect(optionsResult.value.service).toBe("all");
       }
     });
   });

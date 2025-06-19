@@ -18,10 +18,10 @@ export async function FavoritesList() {
     favorites = await getUserFavoritesAction();
   } catch (error) {
     // User might not be authenticated or no favorites
-    favorites = { regions: [], locations: [] };
+    favorites = { items: [], count: 0 };
   }
 
-  const totalFavorites = favorites.regions.length + favorites.locations.length;
+  const totalFavorites = favorites.count;
 
   if (totalFavorites === 0) {
     return (
@@ -58,109 +58,131 @@ export async function FavoritesList() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {favorites.regions.length > 0 && (
+          {favorites.items.filter((item) => item.targetType === "region")
+            .length > 0 && (
             <div>
               <h4 className="font-medium mb-3 text-sm text-muted-foreground">
-                Regions ({favorites.regions.length})
+                Regions (
+                {
+                  favorites.items.filter((item) => item.targetType === "region")
+                    .length
+                }
+                )
               </h4>
               <div className="space-y-2">
-                {favorites.regions.map((region) => (
-                  <div
-                    key={region.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h5 className="font-medium truncate">{region.name}</h5>
-                        <Badge
-                          variant={region.isPublic ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {region.isPublic ? (
-                            <>
-                              <Globe className="w-2 h-2 mr-1" />
-                              Public
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-2 h-2 mr-1" />
-                              Private
-                            </>
-                          )}
-                        </Badge>
+                {favorites.items
+                  .filter((item) => item.targetType === "region")
+                  .map((region) => (
+                    <div
+                      key={region.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h5 className="font-medium truncate">
+                            {region.name}
+                          </h5>
+                          <Badge
+                            variant={region.isPublic ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {region.isPublic ? (
+                              <>
+                                <Globe className="w-2 h-2 mr-1" />
+                                Public
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-2 h-2 mr-1" />
+                                Private
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+                        {region.description && (
+                          <p className="text-sm text-muted-foreground truncate">
+                            {region.description}
+                          </p>
+                        )}
                       </div>
-                      {region.description && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {region.description}
-                        </p>
-                      )}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/regions/${region.id}`}>View</Link>
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/regions/${region.id}`}>View</Link>
-                    </Button>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
 
-          {favorites.regions.length > 0 && favorites.locations.length > 0 && (
-            <Separator />
-          )}
+          {favorites.items.filter((item) => item.targetType === "region")
+            .length > 0 &&
+            favorites.items.filter((item) => item.targetType === "location")
+              .length > 0 && <Separator />}
 
-          {favorites.locations.length > 0 && (
+          {favorites.items.filter((item) => item.targetType === "location")
+            .length > 0 && (
             <div>
               <h4 className="font-medium mb-3 text-sm text-muted-foreground">
-                Locations ({favorites.locations.length})
+                Locations (
+                {
+                  favorites.items.filter(
+                    (item) => item.targetType === "location",
+                  ).length
+                }
+                )
               </h4>
               <div className="space-y-2">
-                {favorites.locations.map((location) => (
-                  <div
-                    key={location.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h5 className="font-medium truncate">
-                          {location.name}
-                        </h5>
-                        <Badge
-                          variant={location.isPublic ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {location.isPublic ? (
-                            <>
-                              <Globe className="w-2 h-2 mr-1" />
-                              Public
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-2 h-2 mr-1" />
-                              Private
-                            </>
-                          )}
-                        </Badge>
-                        {location.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {location.category}
+                {favorites.items
+                  .filter((item) => item.targetType === "location")
+                  .map((location) => (
+                    <div
+                      key={location.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h5 className="font-medium truncate">
+                            {location.name}
+                          </h5>
+                          <Badge
+                            variant={
+                              location.isPublic ? "default" : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {location.isPublic ? (
+                              <>
+                                <Globe className="w-2 h-2 mr-1" />
+                                Public
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-2 h-2 mr-1" />
+                                Private
+                              </>
+                            )}
                           </Badge>
+                          {location.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {location.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{location.regionName}</span>
+                        </div>
+                        {location.description && (
+                          <p className="text-sm text-muted-foreground truncate mt-1">
+                            {location.description}
+                          </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{location.regionName}</span>
-                      </div>
-                      {location.description && (
-                        <p className="text-sm text-muted-foreground truncate mt-1">
-                          {location.description}
-                        </p>
-                      )}
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/locations/${location.id}`}>View</Link>
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/locations/${location.id}`}>View</Link>
-                    </Button>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}

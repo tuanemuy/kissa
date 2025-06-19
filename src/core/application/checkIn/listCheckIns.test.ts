@@ -11,6 +11,7 @@ import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
+import { MockCheckInRepository } from "../../adapters/mock/checkInRepository";
 import type { Context } from "../context";
 import {
   listCheckIns,
@@ -21,29 +22,33 @@ import {
 describe("listCheckIns", () => {
   let context: Context;
 
-  const userId1: UserId = "user-1" as UserId;
-  const userId2: UserId = "user-2" as UserId;
-  const locationId1: LocationId = "location-1" as LocationId;
-  const locationId2: LocationId = "location-2" as LocationId;
+  const userId1: UserId = "12345678-1234-4123-8123-123456789012" as UserId;
+  const userId2: UserId = "12345678-1234-4123-8123-123456789013" as UserId;
+  const locationId1: LocationId =
+    "12345678-1234-4123-8123-123456789015" as LocationId;
+  const locationId2: LocationId =
+    "12345678-1234-4123-8123-123456789016" as LocationId;
 
   const checkIn1: CheckIn = {
-    id: "checkin-1" as CheckInId,
+    id: "12345678-1234-4123-8123-123456789020" as CheckInId,
     userId: userId1,
     locationId: locationId1,
     comment: "Great place!",
     rating: 5,
-    photoUrls: ["https://example.com/photo1.jpg"],
+    photoUrl: "https://example.com/photo1.jpg",
+    isPublic: true,
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   };
 
   const checkIn2: CheckIn = {
-    id: "checkin-2" as CheckInId,
+    id: "12345678-1234-4123-8123-123456789021" as CheckInId,
     userId: userId2,
     locationId: locationId2,
     comment: "Nice location",
     rating: 4,
-    photoUrls: [],
+    photoUrl: null,
+    isPublic: true,
     createdAt: new Date("2024-01-02"),
     updatedAt: new Date("2024-01-02"),
   };
@@ -51,51 +56,52 @@ describe("listCheckIns", () => {
   const mockCheckIns = [checkIn1, checkIn2];
 
   beforeEach(() => {
+    const mockCheckInRepository = new MockCheckInRepository();
+
+    // Setup test data
+    mockCheckInRepository.addCheckIn(checkIn1);
+    mockCheckInRepository.addCheckIn(checkIn2);
+
     context = {
-      checkInRepository: {
-        list: async (query: ListCheckInsQuery) => {
-          let items = [...mockCheckIns];
-
-          // Apply filters
-          if (query.filter?.userId) {
-            items = items.filter(
-              (item) => item.userId === query.filter?.userId,
-            );
-          }
-          if (query.filter?.locationId) {
-            items = items.filter(
-              (item) => item.locationId === query.filter?.locationId,
-            );
-          }
-          if (query.filter?.hasPhoto !== undefined) {
-            items = items.filter((item) =>
-              query.filter?.hasPhoto
-                ? item.photoUrls.length > 0
-                : item.photoUrls.length === 0,
-            );
-          }
-          if (query.filter?.minRating) {
-            items = items.filter(
-              (item) => item.rating >= (query.filter?.minRating || 0),
-            );
-          }
-
-          // Apply pagination
-          const offset = (query.pagination.page - 1) * query.pagination.limit;
-          const paginatedItems = items.slice(
-            offset,
-            offset + query.pagination.limit,
-          );
-
-          return ok({ items: paginatedItems, count: items.length });
-        },
-        listWithUser: async () =>
-          ok({ items: [] as CheckInWithUser[], count: 0 }),
-        listWithLocation: async () =>
-          ok({ items: [] as CheckInWithLocation[], count: 0 }),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-    } as Context;
+      checkInRepository: mockCheckInRepository,
+      // Add minimal required services to satisfy Context interface
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      userRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      passwordHasher: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      authService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      regionRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      locationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      favoriteRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      moderationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      pushNotificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      billingRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      paymentGateway: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      mapsService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      fileStorageService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      metricsCollector: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      alertManager: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      backupService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      privacyService: {} as any,
+    } satisfies Context;
   });
 
   describe("Basic listing functionality", () => {
@@ -173,7 +179,7 @@ describe("listCheckIns", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0].photoUrls.length).toBeGreaterThan(0);
+        expect(result.value.items[0].photoUrl).not.toBeNull();
       }
     });
 
@@ -208,7 +214,7 @@ describe("listCheckIns", () => {
       if (result.isOk()) {
         expect(result.value.items).toHaveLength(1);
         expect(result.value.items[0].userId).toBe(userId1);
-        expect(result.value.items[0].photoUrls.length).toBeGreaterThan(0);
+        expect(result.value.items[0].photoUrl).not.toBeNull();
         expect(result.value.items[0].rating).toBe(5);
       }
     });
@@ -300,11 +306,8 @@ describe("listCheckIns", () => {
 
   describe("Error handling", () => {
     it("should handle repository failure", async () => {
-      context.checkInRepository = {
-        ...context.checkInRepository,
-        list: async () => err(new RepositoryError("List failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      const mockRepository = context.checkInRepository as MockCheckInRepository;
+      mockRepository.setShouldFailOperations(true);
 
       const input = {
         pagination: { page: 1, limit: 10 },
@@ -330,18 +333,16 @@ describe("listCheckIns", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.items).toEqual([]);
-        expect(result.value.count).toBe(0);
+        expect(result.value.items).toHaveLength(2);
+        expect(result.value.count).toBe(2);
+        expect(result.value.items[0]).toHaveProperty("user");
+        expect(result.value.items[0].user.name).toBe("Mock User");
       }
     });
 
     it("should handle repository failure", async () => {
-      context.checkInRepository = {
-        ...context.checkInRepository,
-        listWithUser: async () =>
-          err(new RepositoryError("List with user failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      const mockRepository = context.checkInRepository as MockCheckInRepository;
+      mockRepository.setShouldFailOperations(true);
 
       const input = {
         pagination: { page: 1, limit: 10 },
@@ -367,18 +368,16 @@ describe("listCheckIns", () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value.items).toEqual([]);
-        expect(result.value.count).toBe(0);
+        expect(result.value.items).toHaveLength(2);
+        expect(result.value.count).toBe(2);
+        expect(result.value.items[0]).toHaveProperty("location");
+        expect(result.value.items[0].location.name).toBe("Mock Location");
       }
     });
 
     it("should handle repository failure", async () => {
-      context.checkInRepository = {
-        ...context.checkInRepository,
-        listWithLocation: async () =>
-          err(new RepositoryError("List with location failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      const mockRepository = context.checkInRepository as MockCheckInRepository;
+      mockRepository.setShouldFailOperations(true);
 
       const input = {
         pagination: { page: 1, limit: 10 },
@@ -400,7 +399,7 @@ describe("listCheckIns", () => {
     it("should return empty results for non-existent filters", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
-        filter: { userId: "non-existent-user" as UserId },
+        filter: { userId: "87654321-1234-4123-8321-210987654321" as UserId }, // Valid UUID but non-existent user
       };
 
       const result = await listCheckIns(context, input);

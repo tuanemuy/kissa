@@ -18,7 +18,7 @@ describe("createCheckIn", () => {
   let mockCheckInRepository: MockCheckInRepository;
 
   const visitorUser: User = {
-    id: "visitor-1" as UserId,
+    id: "12345678-1234-4123-8123-123456789012" as UserId,
     name: "Test Visitor",
     email: "visitor@example.com",
     role: "visitor",
@@ -32,7 +32,7 @@ describe("createCheckIn", () => {
   };
 
   const editorUser: User = {
-    id: "editor-1" as UserId,
+    id: "12345678-1234-4123-8123-123456789013" as UserId,
     name: "Test Editor",
     email: "editor@example.com",
     role: "editor",
@@ -46,7 +46,7 @@ describe("createCheckIn", () => {
   };
 
   const adminUser: User = {
-    id: "admin-1" as UserId,
+    id: "12345678-1234-4123-8123-123456789014" as UserId,
     name: "Test Admin",
     email: "admin@example.com",
     role: "admin",
@@ -60,9 +60,9 @@ describe("createCheckIn", () => {
   };
 
   const testLocation: Location = {
-    id: "location-1" as LocationId,
-    // biome-ignore lint/suspicious/noExplicitAny: Test data setup requires type assertion
-    regionId: "region-1" as any,
+    id: "12345678-1234-4123-8123-123456789015" as LocationId,
+    // biome-ignore lint/suspicious/noExplicitAny: Mock region ID for testing
+    regionId: "12345678-1234-4123-8123-123456789016" as any,
     name: "Test Location",
     description: "A test location",
     category: "restaurant",
@@ -92,7 +92,40 @@ describe("createCheckIn", () => {
       userRepository: mockUserRepository,
       locationRepository: mockLocationRepository,
       checkInRepository: mockCheckInRepository,
-    } as unknown as Context;
+      // Add minimal required services to satisfy Context interface
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      passwordHasher: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      authService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      regionRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      favoriteRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      moderationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      pushNotificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      billingRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      paymentGateway: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      mapsService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      fileStorageService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      metricsCollector: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      alertManager: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      backupService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      privacyService: {} as any,
+    } satisfies Context;
   });
 
   describe("SPEC-INV-4,5,8,9: Check-in constraints from Alloy model", () => {
@@ -302,7 +335,7 @@ describe("createCheckIn", () => {
   describe("Error handling", () => {
     it("should handle user not found", async () => {
       const input = {
-        userId: "non-existent-user",
+        userId: "87654321-1234-4123-8321-210987654321" as UserId, // Valid UUID but non-existent user
         locationId: testLocation.id,
         comment: "Should fail",
         isPublic: true,
@@ -320,7 +353,7 @@ describe("createCheckIn", () => {
     it("should handle location not found", async () => {
       const input = {
         userId: visitorUser.id,
-        locationId: "non-existent-location",
+        locationId: "87654321-1234-4123-8321-210987654321" as LocationId, // Valid UUID but non-existent location
         comment: "Should fail",
         isPublic: true,
       };

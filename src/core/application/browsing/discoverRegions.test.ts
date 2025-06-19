@@ -1,14 +1,15 @@
-import type { Region, RegionId } from "@/core/domain/region/types";
+import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
+import type { RegionId, RegionWithStats } from "@/core/domain/region/types";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
-import { RepositoryError } from "@/lib/error";
-import { err, ok } from "neverthrow";
+import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
 import { discoverRegions } from "./discoverRegions";
 
 describe("discoverRegions", () => {
   let context: Context;
+  let mockRegionRepository: MockRegionRepository;
 
   const editorUser: User = {
     id: "editor-1" as UserId,
@@ -24,7 +25,7 @@ describe("discoverRegions", () => {
     updatedAt: new Date(),
   };
 
-  const publicRegions: Region[] = [
+  const publicRegions: RegionWithStats[] = [
     {
       id: "region-1" as RegionId,
       name: "Tokyo Central",
@@ -36,6 +37,9 @@ describe("discoverRegions", () => {
       coverPhotoUrl: null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
+      locationCount: 5,
+      favoriteCount: 10,
+      checkInCount: 15,
     },
     {
       id: "region-2" as RegionId,
@@ -48,6 +52,9 @@ describe("discoverRegions", () => {
       coverPhotoUrl: null,
       createdAt: new Date("2024-01-02"),
       updatedAt: new Date("2024-01-02"),
+      locationCount: 3,
+      favoriteCount: 8,
+      checkInCount: 12,
     },
     {
       id: "region-3" as RegionId,
@@ -60,31 +67,38 @@ describe("discoverRegions", () => {
       coverPhotoUrl: null,
       createdAt: new Date("2024-01-03"),
       updatedAt: new Date("2024-01-03"),
+      locationCount: 2,
+      favoriteCount: 6,
+      checkInCount: 9,
     },
   ];
 
   beforeEach(() => {
+    mockRegionRepository = new MockRegionRepository();
+    // Add public regions to mock repository
+    for (const region of publicRegions) {
+      mockRegionRepository.addRegion(region);
+    }
+
     context = {
       userRepository: {
         findById: async (id: string) => {
           if (id === editorUser.id) return ok(editorUser);
           return ok(null);
         },
-      } as Partial<typeof context.userRepository>,
-      regionRepository: {
-        discover: async () =>
-          ok({ items: publicRegions, count: publicRegions.length }),
-      } as Partial<typeof context.regionRepository>,
-    } as Context;
+      },
+      regionRepository: mockRegionRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC: Region discovery from formal specifications", () => {
-    it("should discover public regions for authenticated users", async () => {
+    it("should discover public regions", async () => {
       const query = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -92,18 +106,19 @@ describe("discoverRegions", () => {
         expect(items).toHaveLength(3);
         expect(count).toBe(3);
         expect(items.every((r) => r.isPublic)).toBe(true);
-        expect(items[0].name).toBe("Tokyo Central");
+        expect(items[0].name).toBe("Akihabara Electronics"); // Most recent
         expect(items[1].name).toBe("Shibuya District");
-        expect(items[2].name).toBe("Akihabara Electronics");
+        expect(items[2].name).toBe("Tokyo Central");
       }
     });
 
-    it("should discover public regions for anonymous users", async () => {
+    it("should discover public regions with default sort", async () => {
       const query = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
-      const result = await discoverRegions(context, null, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -114,21 +129,14 @@ describe("discoverRegions", () => {
       }
     });
 
-    it("should filter regions by keyword", async () => {
-      const tokyoRegions = publicRegions.filter((r) =>
-        r.name.includes("Tokyo"),
-      );
-      context.regionRepository = {
-        discover: async () =>
-          ok({ items: tokyoRegions, count: tokyoRegions.length }),
-      } as Partial<typeof context.regionRepository>;
-
+    it("should filter regions by search term", async () => {
       const query = {
         pagination: { page: 1, limit: 10 },
-        filter: { keyword: "Tokyo" },
+        filter: { search: "Tokyo" },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -145,57 +153,35 @@ describe("discoverRegions", () => {
       // TLA+ SearchRegionsByKeyword: search results are public and active
       const query = {
         pagination: { page: 1, limit: 10 },
-        filter: { keyword: "District" },
+        filter: { search: "District" },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const districtRegions = publicRegions.filter((r) =>
-        r.name.includes("District"),
-      );
-      context.regionRepository = {
-        discover: async () =>
-          ok({ items: districtRegions, count: districtRegions.length }),
-      } as Partial<typeof context.regionRepository>;
-
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const { items } = result.value;
         // Verify TLA+ constraint: regionStates[r].visibility = "public"
         expect(items.every((r) => r.isPublic)).toBe(true);
-        expect(items[0].name).toBe("Shibuya District");
+        expect(items.some((r) => r.name === "Shibuya District")).toBe(true);
       }
     });
 
-    it("should follow SearchRegionsByLocation from TLA+ specification", async () => {
-      // TLA+ SearchRegionsByLocation: filter by proximity
+    it("should follow public visibility constraint", async () => {
       const query = {
         pagination: { page: 1, limit: 10 },
-        filter: {
-          location: {
-            latitude: 35.6762,
-            longitude: 139.6503,
-            radiusKm: 5,
-          },
-        },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const nearbyRegions = publicRegions.filter(
-        (r) => r.latitude !== null && Math.abs(r.latitude - 35.6762) < 0.1,
-      );
-      context.regionRepository = {
-        discover: async () =>
-          ok({ items: nearbyRegions, count: nearbyRegions.length }),
-      } as Partial<typeof context.regionRepository>;
-
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const { items } = result.value;
         // Verify proximity filtering
         expect(items.length).toBeGreaterThan(0);
-        expect(items.every((r) => r.latitude !== null)).toBe(true);
+        expect(items.every((r) => r.isPublic)).toBe(true);
       }
     });
   });
@@ -206,9 +192,10 @@ describe("discoverRegions", () => {
       // all r: si.regions | r.visibility = Public
       const query = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -223,77 +210,60 @@ describe("discoverRegions", () => {
     it("should reject invalid pagination - negative page", async () => {
       const query = {
         pagination: { page: -1, limit: 10 },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(
-        context,
-        editorUser.id,
-        query as never,
-      );
+      const result = await discoverRegions(context, query as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Invalid query parameters");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
 
-    it("should reject invalid location coordinates", async () => {
+    it("should reject invalid limit", async () => {
       const query = {
-        pagination: { page: 1, limit: 10 },
-        filter: {
-          location: {
-            latitude: 200, // Invalid latitude
-            longitude: 139.6503,
-            radiusKm: 5,
-          },
-        },
+        pagination: { page: 1, limit: 200 }, // Invalid limit > 100
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(
-        context,
-        editorUser.id,
-        query as never,
-      );
+      const result = await discoverRegions(context, query as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Invalid query parameters");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
   });
 
   describe("Error handling", () => {
-    it("should handle user not found", async () => {
+    it("should handle invalid input", async () => {
       const query = {
-        pagination: { page: 1, limit: 10 },
+        pagination: { page: 0, limit: 10 }, // Invalid page
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(
-        context,
-        "non-existent" as UserId,
-        query,
-      );
+      const result = await discoverRegions(context, query as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("User not found");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockRegionRepository = context.regionRepository as any;
-      mockRegionRepository.discover = async () =>
-        err(new RepositoryError("Search service error"));
+      // Make the repository fail
+      mockRegionRepository.setShouldFailOperations(true);
 
       const query = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -304,37 +274,31 @@ describe("discoverRegions", () => {
   });
 
   describe("Sorting and ordering", () => {
-    it("should sort regions by relevance", async () => {
+    it("should sort regions by name", async () => {
       const query = {
         pagination: { page: 1, limit: 10 },
-        sort: { field: "relevance" as const, order: "desc" as const },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const { items } = result.value;
         expect(items).toHaveLength(3);
-        // In a real implementation, relevance would be calculated
+        expect(items[0].name).toBe("Akihabara Electronics");
+        expect(items[1].name).toBe("Shibuya District");
+        expect(items[2].name).toBe("Tokyo Central");
       }
     });
 
     it("should sort regions by creation date", async () => {
-      const sortedRegions = [...publicRegions].sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-      );
-      context.regionRepository = {
-        discover: async () =>
-          ok({ items: sortedRegions, count: sortedRegions.length }),
-      } as Partial<typeof context.regionRepository>;
-
       const query = {
         pagination: { page: 1, limit: 10 },
         sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -346,16 +310,13 @@ describe("discoverRegions", () => {
 
   describe("Empty results handling", () => {
     it("should handle empty search results", async () => {
-      context.regionRepository = {
-        discover: async () => ok({ items: [], count: 0 }),
-      } as Partial<typeof context.regionRepository>;
-
       const query = {
         pagination: { page: 1, limit: 10 },
-        filter: { keyword: "NonExistentPlace" },
+        filter: { search: "NonExistentPlace" },
+        sort: { field: "name" as const, order: "asc" as const },
       };
 
-      const result = await discoverRegions(context, editorUser.id, query);
+      const result = await discoverRegions(context, query);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {

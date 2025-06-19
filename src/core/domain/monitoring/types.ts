@@ -51,3 +51,27 @@ export const healthCheckSchema = z.object({
   details: z.record(z.string(), z.unknown()).optional(),
 });
 export type HealthCheck = z.infer<typeof healthCheckSchema>;
+
+export const healthCheckResultSchema = z.object({
+  status: z.enum(["healthy", "unhealthy", "degraded"]),
+  timestamp: z.date(),
+  services: z
+    .record(
+      z.string(),
+      z.object({
+        status: z.enum(["healthy", "unhealthy", "degraded"]),
+        responseTime: z.number(),
+        error: z.string().optional(),
+      }),
+    )
+    .optional(),
+  metrics: z
+    .object({
+      memoryUsage: z.number(),
+      cpuUsage: z.number(),
+      diskUsage: z.number(),
+      activeConnections: z.number(),
+    })
+    .optional(),
+});
+export type HealthCheckResult = z.infer<typeof healthCheckResultSchema>;

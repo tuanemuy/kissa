@@ -1,5 +1,6 @@
 import type {
   ListLocationsQuery,
+  LocationId,
   LocationWithStats,
 } from "@/core/domain/location/types";
 import type { Region, RegionId } from "@/core/domain/region/types";
@@ -46,7 +47,7 @@ describe("discoverLocations", () => {
 
   const mockLocations: LocationWithStats[] = [
     {
-      id: "location-1",
+      id: "location-1" as LocationId,
       name: "Tokyo Station",
       description: "Central train station",
       regionId: publicRegion.id,
@@ -54,11 +55,18 @@ describe("discoverLocations", () => {
       address: "1-1 Marunouchi",
       latitude: 35.6812,
       longitude: 139.7671,
-      contactEmail: null,
-      contactPhone: null,
-      website: null,
-      operatingHours: "24/7",
-      photoUrls: [],
+      contactInfo: null,
+      operatingHours: {
+        monday: "24/7",
+        tuesday: "24/7",
+        wednesday: "24/7",
+        thursday: "24/7",
+        friday: "24/7",
+        saturday: "24/7",
+        sunday: "24/7",
+      },
+      isPublic: true,
+      coverPhotoUrl: null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
       checkInCount: 150,
@@ -66,7 +74,7 @@ describe("discoverLocations", () => {
       averageRating: 4.5,
     },
     {
-      id: "location-2",
+      id: "location-2" as LocationId,
       name: "Shibuya Crossing",
       description: "Famous intersection",
       regionId: publicRegion.id,
@@ -74,11 +82,10 @@ describe("discoverLocations", () => {
       address: "Shibuya City",
       latitude: 35.6595,
       longitude: 139.7006,
-      contactEmail: null,
-      contactPhone: null,
-      website: null,
+      contactInfo: null,
       operatingHours: null,
-      photoUrls: [],
+      isPublic: true,
+      coverPhotoUrl: null,
       createdAt: new Date("2024-01-02"),
       updatedAt: new Date("2024-01-02"),
       checkInCount: 200,
@@ -143,6 +150,7 @@ describe("discoverLocations", () => {
     it("should discover public locations without region filter", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -159,6 +167,7 @@ describe("discoverLocations", () => {
     it("should filter by public region", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { regionId: publicRegion.id },
       };
 
@@ -177,6 +186,7 @@ describe("discoverLocations", () => {
       // Mock should automatically apply isPublic: true filter
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -190,6 +200,7 @@ describe("discoverLocations", () => {
     it("should reject private region access", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { regionId: privateRegion.id },
       };
 
@@ -205,6 +216,7 @@ describe("discoverLocations", () => {
     it("should reject non-existent region", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { regionId: "non-existent-region" },
       };
 
@@ -222,6 +234,7 @@ describe("discoverLocations", () => {
     it("should filter by category", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { category: "transportation" },
       };
 
@@ -237,6 +250,7 @@ describe("discoverLocations", () => {
     it("should filter by search term", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { search: "Station" },
       };
 
@@ -252,6 +266,7 @@ describe("discoverLocations", () => {
     it("should handle multiple filters", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: {
           regionId: publicRegion.id,
           category: "landmark",
@@ -272,6 +287,7 @@ describe("discoverLocations", () => {
     it("should apply default sorting (createdAt desc)", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -296,6 +312,7 @@ describe("discoverLocations", () => {
     it("should reject invalid pagination - negative page", async () => {
       const input = {
         pagination: { page: -1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -310,6 +327,7 @@ describe("discoverLocations", () => {
     it("should reject invalid pagination - limit too high", async () => {
       const input = {
         pagination: { page: 1, limit: 200 }, // > 100
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -324,6 +342,7 @@ describe("discoverLocations", () => {
     it("should reject invalid regionId UUID", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { regionId: "invalid-uuid" },
       };
 
@@ -346,6 +365,7 @@ describe("discoverLocations", () => {
 
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
         filter: { regionId: publicRegion.id },
       };
 
@@ -367,6 +387,7 @@ describe("discoverLocations", () => {
 
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -482,6 +503,7 @@ describe("discoverLocations", () => {
     it("should only return locations from public regions", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);
@@ -498,6 +520,7 @@ describe("discoverLocations", () => {
     it("should include location statistics", async () => {
       const input = {
         pagination: { page: 1, limit: 10 },
+        sort: { field: "createdAt" as const, order: "desc" as const },
       };
 
       const result = await discoverLocations(context, input);

@@ -1,3 +1,4 @@
+import { MockUserRepository } from "@/core/adapters/mock/userRepository";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
@@ -8,6 +9,7 @@ import { listUsers } from "./listUsers";
 
 describe("listUsers", () => {
   let context: Context;
+  let mockUserRepository: MockUserRepository;
 
   const testUsers: User[] = [
     {
@@ -52,11 +54,16 @@ describe("listUsers", () => {
   ];
 
   beforeEach(() => {
+    mockUserRepository = new MockUserRepository();
+
+    // Add test users to the mock repository
+    for (const user of testUsers) {
+      mockUserRepository.addUser(user, `hashed_password_${user.id}`);
+    }
+
     context = {
-      userRepository: {
-        list: async () => ok({ items: testUsers, count: testUsers.length }),
-      } as Partial<typeof context.userRepository>,
-    } as Context;
+      userRepository: mockUserRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC: User listing from formal specifications", () => {
@@ -79,12 +86,6 @@ describe("listUsers", () => {
     });
 
     it("should filter users by role", async () => {
-      const filteredUsers = testUsers.filter((user) => user.role === "editor");
-      context.userRepository = {
-        list: async () =>
-          ok({ items: filteredUsers, count: filteredUsers.length }),
-      } as Partial<typeof context.userRepository>;
-
       const query = {
         pagination: { page: 1, limit: 10 },
         filter: { role: "editor" as const },
@@ -102,14 +103,6 @@ describe("listUsers", () => {
     });
 
     it("should filter users by subscription", async () => {
-      const filteredUsers = testUsers.filter(
-        (user) => user.subscription === "free",
-      );
-      context.userRepository = {
-        list: async () =>
-          ok({ items: filteredUsers, count: filteredUsers.length }),
-      } as Partial<typeof context.userRepository>;
-
       const query = {
         pagination: { page: 1, limit: 10 },
         filter: { subscription: "free" as const },
@@ -131,7 +124,7 @@ describe("listUsers", () => {
       // TLA+ SearchRegionsByKeyword equivalent for users
       const query = {
         pagination: { page: 1, limit: 10 },
-        filter: { name: "Test" },
+        filter: { search: "Test" },
       };
 
       const result = await listUsers(context, query);
@@ -172,10 +165,7 @@ describe("listUsers", () => {
 
   describe("Error handling", () => {
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
-      mockUserRepository.list = async () =>
-        err(new RepositoryError("Database error"));
+      mockUserRepository.setShouldFailOperations(true);
 
       const query = {
         pagination: { page: 1, limit: 10 },
@@ -193,9 +183,7 @@ describe("listUsers", () => {
 
   describe("Pagination behavior", () => {
     it("should handle empty result set", async () => {
-      context.userRepository = {
-        list: async () => ok({ items: [], count: 0 }),
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.clear(); // Clear all users to simulate empty result set
 
       const query = {
         pagination: { page: 1, limit: 10 },
@@ -212,10 +200,6 @@ describe("listUsers", () => {
     });
 
     it("should handle large page numbers", async () => {
-      context.userRepository = {
-        list: async () => ok({ items: [], count: 3 }),
-      } as Partial<typeof context.userRepository>;
-
       const query = {
         pagination: { page: 100, limit: 10 },
       };

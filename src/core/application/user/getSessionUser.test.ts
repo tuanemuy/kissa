@@ -44,7 +44,6 @@ describe("getSessionUser", () => {
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     lastActivityAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
     createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
   const expiredSession: Session = {
@@ -79,7 +78,7 @@ describe("getSessionUser", () => {
         },
         deleteSession: async () => ok(undefined),
         updateSessionActivity: async () => ok(undefined),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any,
     } as Context;
   });
@@ -107,7 +106,7 @@ describe("getSessionUser", () => {
           expect(sessionId).toBe(oldActivitySession.id);
           return ok(undefined);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "old-activity-token" };
@@ -127,7 +126,7 @@ describe("getSessionUser", () => {
           updateActivityCalled = true;
           return ok(undefined);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "valid-token" };
@@ -162,7 +161,7 @@ describe("getSessionUser", () => {
           expect(sessionId).toBe(expiredSession.id);
           return ok(undefined);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "expired-token" };
@@ -192,7 +191,7 @@ describe("getSessionUser", () => {
           if (token === "inactive-user-token") return ok(inactiveUserSession);
           return ok(null);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "inactive-user-token" };
@@ -220,7 +219,7 @@ describe("getSessionUser", () => {
             return ok(nonExistentUserSession);
           return ok(null);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "non-existent-user-token" };
@@ -268,7 +267,7 @@ describe("getSessionUser", () => {
         ...context.userRepository,
         findSessionByToken: async () =>
           err(new RepositoryError("Session lookup failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "valid-token" };
@@ -286,7 +285,7 @@ describe("getSessionUser", () => {
       context.userRepository = {
         ...context.userRepository,
         findById: async () => err(new RepositoryError("User lookup failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "valid-token" };
@@ -308,7 +307,7 @@ describe("getSessionUser", () => {
         ...context.userRepository,
         updateSessionActivity: async () =>
           err(new RepositoryError("Update failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "old-activity-token" };
@@ -328,7 +327,7 @@ describe("getSessionUser", () => {
       context.userRepository = {
         ...context.userRepository,
         deleteSession: async () => err(new RepositoryError("Delete failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "expired-token" };
@@ -362,7 +361,7 @@ describe("getSessionUser", () => {
         },
         deleteSession: async () => ok(undefined),
         updateSessionActivity: async () => ok(undefined),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "valid-token" };
@@ -393,7 +392,7 @@ describe("getSessionUser", () => {
         },
         deleteSession: async () => ok(undefined),
         updateSessionActivity: async () => ok(undefined),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
+        // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any;
 
       const input = { sessionToken: "expired-token" };

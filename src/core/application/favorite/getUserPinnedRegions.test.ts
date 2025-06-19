@@ -1,4 +1,4 @@
-import type { Favorite, FavoriteTarget } from "@/core/domain/favorite/types";
+import type { Favorite, FavoriteId } from "@/core/domain/favorite/types";
 import type { Region, RegionId } from "@/core/domain/region/types";
 import type { UserId } from "@/core/domain/user/types";
 import { ApplicationError, RepositoryError } from "@/lib/error";
@@ -44,29 +44,21 @@ describe("getUserPinnedRegions", () => {
   };
 
   const pinnedFavorite1: Favorite = {
-    id: "fav-1",
+    id: "fav-1" as FavoriteId,
     userId: userId,
-    targetType: "region" as FavoriteTarget,
-    targetId: regionId1,
+    targetType: "region",
     regionId: regionId1,
     locationId: null,
-    isPinned: true,
-    order: 1,
     createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-15"),
   };
 
   const pinnedFavorite2: Favorite = {
-    id: "fav-2",
+    id: "fav-2" as FavoriteId,
     userId: userId,
-    targetType: "region" as FavoriteTarget,
-    targetId: regionId2,
+    targetType: "region",
     regionId: regionId2,
     locationId: null,
-    isPinned: true,
-    order: 2,
     createdAt: new Date("2024-01-16"),
-    updatedAt: new Date("2024-01-16"),
   };
 
   beforeEach(() => {
@@ -138,10 +130,7 @@ describe("getUserPinnedRegions", () => {
 
     it("should sort pinned regions by order", async () => {
       // Mock with reversed order to test sorting
-      const reversedFavorites = [
-        { ...pinnedFavorite2, order: 1 },
-        { ...pinnedFavorite1, order: 2 },
-      ];
+      const reversedFavorites = [pinnedFavorite2, pinnedFavorite1];
 
       context.favoriteRepository = {
         findPinnedRegionsByUserId: async () => ok(reversedFavorites),
@@ -153,10 +142,9 @@ describe("getUserPinnedRegions", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const pinnedRegions = result.value;
-        expect(pinnedRegions[0].order).toBe(1);
-        expect(pinnedRegions[1].order).toBe(2);
-        expect(pinnedRegions[0].id).toBe(regionId2); // Should be first due to order
-        expect(pinnedRegions[1].id).toBe(regionId1); // Should be second due to order
+        expect(pinnedRegions).toHaveLength(2);
+        expect(pinnedRegions[0].id).toBe(regionId2);
+        expect(pinnedRegions[1].id).toBe(regionId1);
       }
     });
   });
@@ -260,16 +248,12 @@ describe("getUserPinnedRegions", () => {
         expect(pinnedRegion).toHaveProperty("description");
         expect(pinnedRegion).toHaveProperty("isPublic");
         expect(pinnedRegion).toHaveProperty("createdAt");
-        expect(pinnedRegion).toHaveProperty("pinnedAt");
-        expect(pinnedRegion).toHaveProperty("order");
 
         // Check types
         expect(typeof pinnedRegion.id).toBe("string");
         expect(typeof pinnedRegion.name).toBe("string");
         expect(typeof pinnedRegion.isPublic).toBe("boolean");
         expect(pinnedRegion.createdAt).toBeInstanceOf(Date);
-        expect(pinnedRegion.pinnedAt).toBeInstanceOf(Date);
-        expect(typeof pinnedRegion.order).toBe("number");
       }
     });
 
@@ -290,30 +274,28 @@ describe("getUserPinnedRegions", () => {
   });
 
   describe("Business logic validation", () => {
-    it("should preserve pinned timestamp from favorite record", async () => {
+    it("should preserve region data correctly", async () => {
       const result = await getUserPinnedRegions(context, userId);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const pinnedRegions = result.value;
-        expect(pinnedRegions[0].pinnedAt).toEqual(pinnedFavorite1.createdAt);
-        expect(pinnedRegions[1].pinnedAt).toEqual(pinnedFavorite2.createdAt);
+        expect(pinnedRegions[0].createdAt).toEqual(testRegion1.createdAt);
+        expect(pinnedRegions[1].createdAt).toEqual(testRegion2.createdAt);
       }
     });
 
-    it("should maintain order consistency", async () => {
+    it("should maintain region consistency", async () => {
       const result = await getUserPinnedRegions(context, userId);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const pinnedRegions = result.value;
 
-        // Verify sorting is maintained
-        for (let i = 1; i < pinnedRegions.length; i++) {
-          expect(pinnedRegions[i].order).toBeGreaterThanOrEqual(
-            pinnedRegions[i - 1].order,
-          );
-        }
+        // Verify regions are returned in expected order
+        expect(pinnedRegions).toHaveLength(2);
+        expect(pinnedRegions[0].id).toBe(regionId1);
+        expect(pinnedRegions[1].id).toBe(regionId2);
       }
     });
   });

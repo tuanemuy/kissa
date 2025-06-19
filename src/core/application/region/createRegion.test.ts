@@ -1,14 +1,15 @@
+import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
 import type { Region, RegionId } from "@/core/domain/region/types";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError, AuthorizationError } from "@/lib/error";
-import { RepositoryError } from "@/lib/error";
-import { err, ok } from "neverthrow";
+import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
 import { createRegion } from "./createRegion";
 
 describe("createRegion", () => {
   let context: Context;
+  let mockRegionRepository: MockRegionRepository;
 
   const editorUser: User = {
     id: "editor-1" as UserId,
@@ -39,6 +40,8 @@ describe("createRegion", () => {
   };
 
   beforeEach(() => {
+    mockRegionRepository = new MockRegionRepository();
+
     context = {
       userRepository: {
         findById: async (id: string) => {
@@ -46,28 +49,9 @@ describe("createRegion", () => {
           if (id === visitorUser.id) return ok(visitorUser);
           return ok(null);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-      regionRepository: {
-        countByCreator: async () => ok(0),
-        create: async () => {
-          const region: Region = {
-            id: "test-region-id" as RegionId,
-            name: "Test Region",
-            description: "A test region",
-            creatorId: editorUser.id,
-            isPublic: true,
-            latitude: null,
-            longitude: null,
-            coverPhotoUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          return ok(region);
-        },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-    } as Context;
+      },
+      regionRepository: mockRegionRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC-INV-1: Only editors can create regions (Alloy constraint)", () => {
@@ -83,7 +67,7 @@ describe("createRegion", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const region = result.value;
-        expect(region.name).toBe("Test Region"); // Mock returns fixed data
+        expect(region.name).toBe("Test Region");
         expect(region.creatorId).toBe(editorUser.id);
         expect(region.isPublic).toBe(true);
       }
@@ -114,21 +98,28 @@ describe("createRegion", () => {
         subscription: "free",
       };
 
-      // Mock findById to return free editor
+      // Add a region to reach the limit
+      const existingRegion: Region = {
+        id: "existing-region" as RegionId,
+        name: "Existing Region",
+        description: "Existing region",
+        creatorId: freeEditorUser.id,
+        isPublic: true,
+        latitude: null,
+        longitude: null,
+        coverPhotoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRegionRepository.addRegion(existingRegion);
+
+      // Update context to return free editor
       context.userRepository = {
         findById: async (id: string) => {
           if (id === freeEditorUser.id) return ok(freeEditorUser);
           return ok(null);
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      // Mock count to be at limit
-      context.regionRepository = {
-        ...context.regionRepository,
-        countByCreator: async () => ok(1), // At free plan limit
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      } as unknown as Context["userRepository"];
 
       const input = {
         name: "Exceeding Free Plan",
@@ -146,12 +137,22 @@ describe("createRegion", () => {
     });
 
     it("should allow creation within basic plan limits", async () => {
-      // Basic plan allows up to 5 regions
-      context.regionRepository = {
-        ...context.regionRepository,
-        countByCreator: async () => ok(4), // Below basic plan limit
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      // Basic plan allows up to 5 regions - add 4 regions
+      for (let i = 1; i <= 4; i++) {
+        const region: Region = {
+          id: `region-${i}` as RegionId,
+          name: `Region ${i}`,
+          description: "Existing region",
+          creatorId: editorUser.id,
+          isPublic: true,
+          latitude: null,
+          longitude: null,
+          coverPhotoUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockRegionRepository.addRegion(region);
+      }
 
       const input = {
         name: "Basic Plan Region",
@@ -226,11 +227,7 @@ describe("createRegion", () => {
     });
 
     it("should handle repository failure", async () => {
-      context.regionRepository = {
-        ...context.regionRepository,
-        create: async () => err(new RepositoryError("Create failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      mockRegionRepository.setShouldFailOperations(true);
 
       const input = {
         name: "Test Region",
@@ -274,6 +271,9 @@ describe("createRegion", () => {
       const result = await createRegion(context, editorUser.id, input);
 
       expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.isPublic).toBe(false);
+      }
     });
   });
 });

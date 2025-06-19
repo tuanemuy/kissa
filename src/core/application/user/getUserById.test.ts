@@ -1,3 +1,4 @@
+import { MockUserRepository } from "@/core/adapters/mock/userRepository";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
@@ -8,6 +9,7 @@ import { getUserById } from "./getUserById";
 
 describe("getUserById", () => {
   let context: Context;
+  let mockUserRepository: MockUserRepository;
 
   const testUser: User = {
     id: "test-user-id" as UserId,
@@ -24,14 +26,12 @@ describe("getUserById", () => {
   };
 
   beforeEach(() => {
+    mockUserRepository = new MockUserRepository();
+    mockUserRepository.addUser(testUser, "hashed_password");
+
     context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === testUser.id) return ok(testUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>,
-    } as Context;
+      userRepository: mockUserRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC: User retrieval constraints from formal specifications", () => {
@@ -73,10 +73,7 @@ describe("getUserById", () => {
 
   describe("Error handling", () => {
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
-      mockUserRepository.findById = async () =>
-        err(new RepositoryError("Database error"));
+      mockUserRepository.setShouldFailOperations(true);
 
       const result = await getUserById(context, testUser.id);
 
@@ -97,12 +94,7 @@ describe("getUserById", () => {
         subscription: "basic",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(editorUser, "hashed_editor_password");
 
       const result = await getUserById(context, editorUser.id);
 
@@ -122,12 +114,7 @@ describe("getUserById", () => {
         subscription: "free",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === adminUser.id) return ok(adminUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(adminUser, "hashed_admin_password");
 
       const result = await getUserById(context, adminUser.id);
 

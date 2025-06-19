@@ -5,27 +5,29 @@ import type {
 } from "@/core/domain/checkIn/types";
 import type { LocationId } from "@/core/domain/location/types";
 import type { UserId } from "@/core/domain/user/types";
-import { ApplicationError } from "@/lib/error";
-import { RepositoryError } from "@/lib/error";
+import { ApplicationError, RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
+import { MockCheckInRepository } from "../../adapters/mock/checkInRepository";
 import type { Context } from "../context";
 import { updateCheckIn } from "./updateCheckIn";
 
 describe("updateCheckIn", () => {
   let context: Context;
 
-  const userId: UserId = "user-1" as UserId;
-  const otherUserId: UserId = "other-user" as UserId;
-  const locationId: LocationId = "location-1" as LocationId;
+  const userId: UserId = "12345678-1234-4123-8123-123456789012" as UserId;
+  const otherUserId: UserId = "12345678-1234-4123-8123-123456789013" as UserId;
+  const locationId: LocationId =
+    "12345678-1234-4123-8123-123456789015" as LocationId;
 
   const testCheckIn: CheckIn = {
-    id: "checkin-1" as CheckInId,
+    id: "12345678-1234-4123-8123-123456789020" as CheckInId,
     userId,
     locationId,
     comment: "Great place!",
     rating: 5,
-    photoUrls: [],
+    photoUrl: null,
+    isPublic: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -38,16 +40,49 @@ describe("updateCheckIn", () => {
   };
 
   beforeEach(() => {
+    const mockCheckInRepository = new MockCheckInRepository();
+    mockCheckInRepository.addCheckIn(testCheckIn);
+
     context = {
-      checkInRepository: {
-        findById: async (id: CheckInId) => {
-          if (id === testCheckIn.id) return ok(testCheckIn);
-          return ok(null);
-        },
-        update: async (params: UpdateCheckInParams) => ok(updatedCheckIn),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-    } as Context;
+      checkInRepository: mockCheckInRepository,
+      // Add minimal required services to satisfy Context interface
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      userRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      passwordHasher: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      authService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      regionRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      locationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      favoriteRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      moderationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      notificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      pushNotificationService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      billingRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      paymentGateway: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      mapsService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      fileStorageService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      metricsCollector: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      alertManager: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      backupService: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      privacyService: {} as any,
+    } satisfies Context;
   });
 
   describe("SPEC-INV-5: CheckIn ownership validation (Alloy constraint)", () => {
@@ -173,7 +208,7 @@ describe("updateCheckIn", () => {
   describe("Error handling", () => {
     it("should handle check-in not found", async () => {
       const input = {
-        id: "non-existent-checkin" as CheckInId,
+        id: "87654321-1234-4123-8321-210987654321" as CheckInId, // Valid UUID but non-existent check-in
         userId: testCheckIn.userId,
         comment: "Update attempt",
       };
@@ -188,11 +223,8 @@ describe("updateCheckIn", () => {
     });
 
     it("should handle repository findById failure", async () => {
-      context.checkInRepository = {
-        ...context.checkInRepository,
-        findById: async () => err(new RepositoryError("Find failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      const mockRepository = context.checkInRepository as MockCheckInRepository;
+      mockRepository.setShouldFailOperations(true);
 
       const input = {
         id: testCheckIn.id,
@@ -210,11 +242,17 @@ describe("updateCheckIn", () => {
     });
 
     it("should handle repository update failure", async () => {
-      context.checkInRepository = {
-        ...context.checkInRepository,
-        update: async () => err(new RepositoryError("Update failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      // First, let the findById succeed, then make update fail
+      const mockRepository = new MockCheckInRepository();
+      mockRepository.addCheckIn(testCheckIn);
+
+      // Override the update method to fail
+      const originalUpdate = mockRepository.update.bind(mockRepository);
+      mockRepository.update = async () => {
+        return err(new RepositoryError("Update failed"));
+      };
+
+      context.checkInRepository = mockRepository;
 
       const input = {
         id: testCheckIn.id,
@@ -238,18 +276,23 @@ describe("updateCheckIn", () => {
       let findCalled = false;
       let updateCalled = false;
 
-      context.checkInRepository = {
-        findById: async (id: CheckInId) => {
-          findCalled = true;
-          if (id === testCheckIn.id) return ok(testCheckIn);
-          return ok(null);
-        },
-        update: async () => {
-          updateCalled = true;
-          return ok(updatedCheckIn);
-        },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+      const mockRepository = new MockCheckInRepository();
+      mockRepository.addCheckIn(testCheckIn);
+
+      const originalFindById = mockRepository.findById.bind(mockRepository);
+      const originalUpdate = mockRepository.update.bind(mockRepository);
+
+      mockRepository.findById = async (id: CheckInId) => {
+        findCalled = true;
+        return originalFindById(id);
+      };
+
+      mockRepository.update = async (params: UpdateCheckInParams) => {
+        updateCalled = true;
+        return originalUpdate(params);
+      };
+
+      context.checkInRepository = mockRepository;
 
       const input = {
         id: testCheckIn.id,

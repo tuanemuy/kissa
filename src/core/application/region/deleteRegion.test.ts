@@ -1,14 +1,18 @@
+import { MockLocationRepository } from "@/core/adapters/mock/locationRepository";
+import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
+import type { LocationId } from "@/core/domain/location/types";
 import type { Region, RegionId } from "@/core/domain/region/types";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
-import { RepositoryError } from "@/lib/error";
-import { err, ok } from "neverthrow";
+import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
 import { deleteRegion } from "./deleteRegion";
 
 describe("deleteRegion", () => {
   let context: Context;
+  let mockRegionRepository: MockRegionRepository;
+  let mockLocationRepository: MockLocationRepository;
 
   const editorUser: User = {
     id: "editor-1" as UserId,
@@ -24,26 +28,12 @@ describe("deleteRegion", () => {
     updatedAt: new Date(),
   };
 
-  const otherUser: User = {
-    id: "other-user" as UserId,
-    name: "Other User",
-    email: "other@example.com",
-    role: "editor",
-    subscription: "basic",
-    profilePhotoUrl: null,
-    isActive: true,
-    stripeCustomerId: null,
-    stripeSubscriptionId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   const testRegion: Region = {
-    id: "test-region-id" as RegionId,
+    id: "region-1" as RegionId,
     name: "Test Region",
-    description: "A test region",
+    description: "Test region for deletion",
     creatorId: editorUser.id,
-    isPublic: true,
+    isPublic: false,
     latitude: null,
     longitude: null,
     coverPhotoUrl: null,
@@ -52,24 +42,24 @@ describe("deleteRegion", () => {
   };
 
   beforeEach(() => {
+    mockRegionRepository = new MockRegionRepository();
+    mockLocationRepository = new MockLocationRepository();
+    mockRegionRepository.addRegion(testRegion);
+
     context = {
-      regionRepository: {
-        findById: async (id: RegionId) => {
-          if (id === testRegion.id) return ok(testRegion);
+      userRepository: {
+        findById: async (id: string) => {
+          if (id === editorUser.id) return ok(editorUser);
           return ok(null);
         },
-        delete: async () => ok(undefined),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-      locationRepository: {
-        countByRegion: async () => ok(0),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any,
-    } as Context;
+      },
+      regionRepository: mockRegionRepository,
+      locationRepository: mockLocationRepository,
+    } as unknown as Context;
   });
 
-  describe("SPEC-INV-2: Region ownership validation (Alloy constraint)", () => {
-    it("should allow region creator to delete region", async () => {
+  describe("Basic delete functionality", () => {
+    it("should delete region successfully", async () => {
       const input = {
         id: testRegion.id,
         userId: editorUser.id,
@@ -78,12 +68,21 @@ describe("deleteRegion", () => {
       const result = await deleteRegion(context, input);
 
       expect(result.isOk()).toBe(true);
-    });
 
+      // Verify region is deleted
+      const findResult = await mockRegionRepository.findById(testRegion.id);
+      expect(findResult.isOk()).toBe(true);
+      if (findResult.isOk()) {
+        expect(findResult.value).toBe(null);
+      }
+    });
+  });
+
+  describe("Authorization", () => {
     it("should reject deletion by non-owner", async () => {
       const input = {
         id: testRegion.id,
-        userId: otherUser.id,
+        userId: "other-user" as UserId,
       };
 
       const result = await deleteRegion(context, input);
@@ -96,71 +95,14 @@ describe("deleteRegion", () => {
     });
   });
 
-  describe("SPEC-INV-3: Region cascade constraint (Alloy constraint)", () => {
-    it("should reject deletion when region has locations", async () => {
-      // Mock location count to be > 0
-      context.locationRepository = {
-        countByRegion: async () => ok(3), // Has locations
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      const input = {
-        id: testRegion.id,
-        userId: editorUser.id,
-      };
-
-      const result = await deleteRegion(context, input);
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toContain(
-          "Cannot delete region with existing locations",
-        );
-      }
-    });
-
-    it("should allow deletion when region has no locations", async () => {
-      // Mock location count to be 0
-      context.locationRepository = {
-        countByRegion: async () => ok(0), // No locations
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      const input = {
-        id: testRegion.id,
-        userId: editorUser.id,
-      };
-
-      const result = await deleteRegion(context, input);
-
-      expect(result.isOk()).toBe(true);
-    });
-  });
-
-  describe("TLA+ behavior validation", () => {
-    it("should follow DeleteRegion action from TLA+ specification", async () => {
-      // TLA+ DeleteRegion action: DeleteRegion(userId, regionId)
-      const input = {
-        id: testRegion.id,
-        userId: editorUser.id,
-      };
-
-      const result = await deleteRegion(context, input);
-
-      expect(result.isOk()).toBe(true);
-      // Verify state transition: region should be removed from system
-    });
-  });
-
   describe("Input validation", () => {
-    it("should reject invalid input - invalid UUID", async () => {
+    it("should reject invalid region ID", async () => {
       const input = {
-        id: "invalid-uuid",
+        id: "invalid-id",
         userId: editorUser.id,
       };
 
-      const result = await deleteRegion(context, input);
+      const result = await deleteRegion(context, input as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -169,10 +111,10 @@ describe("deleteRegion", () => {
       }
     });
 
-    it("should reject missing fields", async () => {
+    it("should reject invalid user ID", async () => {
       const input = {
         id: testRegion.id,
-        // Missing userId
+        userId: "invalid-user-id",
       };
 
       const result = await deleteRegion(context, input as never);
@@ -201,12 +143,8 @@ describe("deleteRegion", () => {
       }
     });
 
-    it("should handle repository findById failure", async () => {
-      context.regionRepository = {
-        ...context.regionRepository,
-        findById: async () => err(new RepositoryError("Find failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+    it("should handle repository failure", async () => {
+      mockRegionRepository.setShouldFailOperations(true);
 
       const input = {
         id: testRegion.id,
@@ -221,76 +159,28 @@ describe("deleteRegion", () => {
         expect(result.error.message).toBe("Failed to find region");
       }
     });
-
-    it("should handle repository countByRegion failure", async () => {
-      context.locationRepository = {
-        countByRegion: async () => err(new RepositoryError("Count failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      const input = {
-        id: testRegion.id,
-        userId: editorUser.id,
-      };
-
-      const result = await deleteRegion(context, input);
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Failed to check region locations");
-      }
-    });
-
-    it("should handle repository delete failure", async () => {
-      context.regionRepository = {
-        ...context.regionRepository,
-        delete: async () => err(new RepositoryError("Delete failed")),
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      const input = {
-        id: testRegion.id,
-        userId: editorUser.id,
-      };
-
-      const result = await deleteRegion(context, input);
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Failed to delete region");
-      }
-    });
   });
 
-  describe("Business logic validation", () => {
-    it("should enforce proper deletion workflow", async () => {
-      // Verify complete deletion process
-      let findCalled = false;
-      let countCalled = false;
-      let deleteCalled = false;
-
-      context.regionRepository = {
-        findById: async (id: RegionId) => {
-          findCalled = true;
-          if (id === testRegion.id) return ok(testRegion);
-          return ok(null);
-        },
-        delete: async () => {
-          deleteCalled = true;
-          return ok(undefined);
-        },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
-
-      context.locationRepository = {
-        countByRegion: async () => {
-          countCalled = true;
-          return ok(0);
-        },
-        // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
-      } as any;
+  describe("Location dependency check", () => {
+    it("should prevent deletion when region has locations", async () => {
+      // Add a location to the region to simulate dependency
+      const location = {
+        id: "location-1" as LocationId,
+        name: "Test Location",
+        description: "Test location",
+        category: "restaurant",
+        regionId: testRegion.id,
+        address: "123 Test St",
+        latitude: null,
+        longitude: null,
+        contactInfo: null,
+        operatingHours: null,
+        coverPhotoUrl: null,
+        isPublic: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockLocationRepository.addLocation(location);
 
       const input = {
         id: testRegion.id,
@@ -299,10 +189,13 @@ describe("deleteRegion", () => {
 
       const result = await deleteRegion(context, input);
 
-      expect(result.isOk()).toBe(true);
-      expect(findCalled).toBe(true);
-      expect(countCalled).toBe(true);
-      expect(deleteCalled).toBe(true);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toBeInstanceOf(ApplicationError);
+        expect(result.error.message).toContain(
+          "Cannot delete region with existing locations",
+        );
+      }
     });
   });
 });

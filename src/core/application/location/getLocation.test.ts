@@ -5,11 +5,17 @@ import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
+import { MockLocationRepository } from "../../adapters/mock/locationRepository";
+import { MockRegionRepository } from "../../adapters/mock/regionRepository";
+import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
 import { getLocation } from "./getLocation";
 
 describe("getLocation", () => {
   let context: Context;
+  let mockUserRepository: MockUserRepository;
+  let mockRegionRepository: MockRegionRepository;
+  let mockLocationRepository: MockLocationRepository;
 
   const editorUser: User = {
     id: "editor-1" as UserId,
@@ -47,9 +53,20 @@ describe("getLocation", () => {
     address: "123 Test Street",
     latitude: 35.6762,
     longitude: 139.6503,
-    contactInfo: "test@example.com",
-    operatingHours: "9:00-18:00",
+    contactInfo: {
+      email: "test@example.com",
+    },
+    operatingHours: {
+      monday: "9:00-18:00",
+      tuesday: "9:00-18:00",
+      wednesday: "9:00-18:00",
+      thursday: "9:00-18:00",
+      friday: "9:00-18:00",
+      saturday: "10:00-16:00",
+      sunday: "Closed",
+    },
     isPublic: true,
+    coverPhotoUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -66,32 +83,27 @@ describe("getLocation", () => {
     contactInfo: null,
     operatingHours: null,
     isPublic: false,
+    coverPhotoUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(() => {
+    mockUserRepository = new MockUserRepository();
+    mockRegionRepository = new MockRegionRepository();
+    mockLocationRepository = new MockLocationRepository();
+
+    // Setup test data
+    mockUserRepository.addUser(editorUser, "hashed_password");
+    mockRegionRepository.addRegion(testRegion);
+    mockLocationRepository.addLocation(publicLocation);
+    mockLocationRepository.addLocation(privateLocation);
+
     context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>,
-      regionRepository: {
-        findById: async (id: string) => {
-          if (id === testRegion.id) return ok(testRegion);
-          return ok(null);
-        },
-      } as Partial<typeof context.regionRepository>,
-      locationRepository: {
-        findById: async (id: string) => {
-          if (id === publicLocation.id) return ok(publicLocation);
-          if (id === privateLocation.id) return ok(privateLocation);
-          return ok(null);
-        },
-      } as Partial<typeof context.locationRepository>,
-    } as Context;
+      userRepository: mockUserRepository,
+      regionRepository: mockRegionRepository,
+      locationRepository: mockLocationRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC: Location visibility constraints from Alloy model", () => {
@@ -103,40 +115,41 @@ describe("getLocation", () => {
         subscription: "free",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === visitorUser.id) return ok(visitorUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(visitorUser, "hashed_password");
 
       const result = await getLocation(
         context,
-        visitorUser.id,
         publicLocation.id,
+        visitorUser.id,
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const location = result.value;
-        expect(location.id).toBe(publicLocation.id);
-        expect(location.name).toBe(publicLocation.name);
-        expect(location.isPublic).toBe(true);
+        expect(location).not.toBeNull();
+        if (location) {
+          expect(location.id).toBe(publicLocation.id);
+          expect(location.name).toBe(publicLocation.name);
+          expect(location.isPublic).toBe(true);
+        }
       }
     });
 
     it("should allow region creator to view private location", async () => {
       const result = await getLocation(
         context,
-        editorUser.id,
         privateLocation.id,
+        editorUser.id,
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const location = result.value;
-        expect(location.id).toBe(privateLocation.id);
-        expect(location.isPublic).toBe(false);
+        expect(location).not.toBeNull();
+        if (location) {
+          expect(location.id).toBe(privateLocation.id);
+          expect(location.isPublic).toBe(false);
+        }
       }
     });
 
@@ -148,17 +161,12 @@ describe("getLocation", () => {
         subscription: "free",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === visitorUser.id) return ok(visitorUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(visitorUser, "hashed_password");
 
       const result = await getLocation(
         context,
-        visitorUser.id,
         privateLocation.id,
+        visitorUser.id,
       );
 
       expect(result.isErr()).toBe(true);
@@ -175,15 +183,18 @@ describe("getLocation", () => {
     it("should verify location belongs to editor-created region", async () => {
       const result = await getLocation(
         context,
-        editorUser.id,
         publicLocation.id,
+        editorUser.id,
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const location = result.value;
-        expect(location.regionId).toBe(testRegion.id);
-        // In full implementation, would verify region.creator.role = Editor
+        expect(location).not.toBeNull();
+        if (location) {
+          expect(location.regionId).toBe(testRegion.id);
+          // In full implementation, would verify region.creator.role = Editor
+        }
       }
     });
   });
@@ -192,8 +203,8 @@ describe("getLocation", () => {
     it("should handle location not found", async () => {
       const result = await getLocation(
         context,
-        editorUser.id,
         "non-existent" as LocationId,
+        editorUser.id,
       );
 
       expect(result.isErr()).toBe(true);
@@ -208,8 +219,8 @@ describe("getLocation", () => {
     it("should handle user not found", async () => {
       const result = await getLocation(
         context,
-        "non-existent" as UserId,
         publicLocation.id,
+        "non-existent" as UserId,
       );
 
       expect(result.isErr()).toBe(true);
@@ -220,15 +231,12 @@ describe("getLocation", () => {
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockLocationRepository = context.locationRepository as any;
-      mockLocationRepository.findById = async () =>
-        err(new RepositoryError("Database error"));
+      mockLocationRepository.setShouldFailOperations(true);
 
       const result = await getLocation(
         context,
-        editorUser.id,
         publicLocation.id,
+        editorUser.id,
       );
 
       expect(result.isErr()).toBe(true);
@@ -241,17 +249,20 @@ describe("getLocation", () => {
 
   describe("Anonymous access", () => {
     it("should allow anonymous access to public locations", async () => {
-      const result = await getLocation(context, null, publicLocation.id);
+      const result = await getLocation(context, publicLocation.id, undefined);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const location = result.value;
-        expect(location.isPublic).toBe(true);
+        expect(location).not.toBeNull();
+        if (location) {
+          expect(location.isPublic).toBe(true);
+        }
       }
     });
 
     it("should reject anonymous access to private locations", async () => {
-      const result = await getLocation(context, null, privateLocation.id);
+      const result = await getLocation(context, privateLocation.id, undefined);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -267,25 +278,30 @@ describe("getLocation", () => {
     it("should return complete location data", async () => {
       const result = await getLocation(
         context,
-        editorUser.id,
         publicLocation.id,
+        editorUser.id,
       );
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const location = result.value;
-        expect(location.id).toBe(publicLocation.id);
-        expect(location.name).toBe(publicLocation.name);
-        expect(location.description).toBe(publicLocation.description);
-        expect(location.category).toBe(publicLocation.category);
-        expect(location.regionId).toBe(publicLocation.regionId);
-        expect(location.address).toBe(publicLocation.address);
-        expect(location.latitude).toBe(publicLocation.latitude);
-        expect(location.longitude).toBe(publicLocation.longitude);
-        expect(location.contactInfo).toBe(publicLocation.contactInfo);
-        expect(location.operatingHours).toBe(publicLocation.operatingHours);
-        expect(location.createdAt).toBeInstanceOf(Date);
-        expect(location.updatedAt).toBeInstanceOf(Date);
+        expect(location).not.toBeNull();
+        if (location) {
+          expect(location.id).toBe(publicLocation.id);
+          expect(location.name).toBe(publicLocation.name);
+          expect(location.description).toBe(publicLocation.description);
+          expect(location.category).toBe(publicLocation.category);
+          expect(location.regionId).toBe(publicLocation.regionId);
+          expect(location.address).toBe(publicLocation.address);
+          expect(location.latitude).toBe(publicLocation.latitude);
+          expect(location.longitude).toBe(publicLocation.longitude);
+          expect(location.contactInfo).toEqual(publicLocation.contactInfo);
+          expect(location.operatingHours).toEqual(
+            publicLocation.operatingHours,
+          );
+          expect(location.createdAt).toBeInstanceOf(Date);
+          expect(location.updatedAt).toBeInstanceOf(Date);
+        }
       }
     });
   });

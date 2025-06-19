@@ -5,11 +5,15 @@ import type { Context } from "../context";
 
 export async function performHealthCheck(
   context: Context,
-  service: string,
+  options?: { detailed?: boolean; quick?: boolean } | string,
 ): Promise<Result<HealthCheck, AnyError>> {
   const startTime = Date.now();
 
   try {
+    // Handle both string and options parameter formats
+    const service = typeof options === "string" ? options : "all";
+    const opts = typeof options === "object" ? options : {};
+
     let status: HealthCheck["status"] = "healthy";
     const details: Record<string, unknown> = {};
 
@@ -25,6 +29,12 @@ export async function performHealthCheck(
         await checkExternalApis(context, details);
         break;
       case "cache":
+        await checkCache(context, details);
+        break;
+      case "all":
+        await checkDatabase(context, details);
+        await checkStorage(context, details);
+        await checkExternalApis(context, details);
         await checkCache(context, details);
         break;
       default:
@@ -64,6 +74,7 @@ export async function performHealthCheck(
     return ok(healthCheck);
   } catch (error) {
     const responseTime = Date.now() - startTime;
+    const service = typeof options === "string" ? options : "all";
     const healthCheck: HealthCheck = {
       service,
       status: "unhealthy",

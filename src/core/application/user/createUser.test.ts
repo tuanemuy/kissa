@@ -1,4 +1,5 @@
-import type { User, UserId } from "@/core/domain/user/types";
+import { MockUserRepository } from "@/core/adapters/mock/userRepository";
+import type { CreateUserParams, User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
@@ -8,32 +9,33 @@ import { createUser } from "./createUser";
 
 describe("createUser", () => {
   let context: Context;
+  let mockUserRepository: MockUserRepository;
 
   beforeEach(() => {
-    // Minimal mock context for basic validation testing
+    mockUserRepository = new MockUserRepository();
+
+    // Add a test user that will be returned by the create method
+    const testUser: User = {
+      id: "test-user-id" as UserId,
+      name: "Test User",
+      email: "test@example.com",
+      role: "visitor",
+      subscription: "free",
+      profilePhotoUrl: null,
+      isActive: true,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
     context = {
-      userRepository: {
-        create: async () => {
-          const user: User = {
-            id: "test-user-id" as UserId,
-            name: "Test User",
-            email: "test@example.com",
-            role: "visitor",
-            subscription: "free",
-            profilePhotoUrl: null,
-            isActive: true,
-            stripeCustomerId: null,
-            stripeSubscriptionId: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          return ok(user);
-        },
-      } as Partial<typeof context.userRepository>,
+      userRepository: mockUserRepository,
       passwordHasher: {
         hash: async (password: string) => `hashed_${password}`,
-      } as Partial<typeof context.passwordHasher>,
-    } as Context;
+        verify: async () => true,
+      },
+    } as unknown as Context;
   });
 
   describe("SPEC-INV-1: User creation constraints from Alloy model", () => {
@@ -51,8 +53,8 @@ describe("createUser", () => {
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const user = result.value;
-        expect(user.name).toBe("Test User"); // Mock returns fixed user
-        expect(user.role).toBe("visitor"); // Mock returns fixed user
+        expect(user.name).toBe("Test Editor");
+        expect(user.role).toBe("editor");
         expect(user.subscription).toBe("free");
         expect(user.isActive).toBe(true);
       }
@@ -160,10 +162,7 @@ describe("createUser", () => {
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
-      mockUserRepository.create = async () =>
-        err(new RepositoryError("Create failed"));
+      mockUserRepository.setShouldFailOperations(true);
 
       const input = {
         name: "Test User",

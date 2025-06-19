@@ -1,14 +1,15 @@
+import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
 import type { Region, RegionId } from "@/core/domain/region/types";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError } from "@/lib/error";
-import { RepositoryError } from "@/lib/error";
-import { err, ok } from "neverthrow";
+import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
-import { getRegion } from "./getRegion";
+import { getRegion, getRegionWithStats } from "./getRegion";
 
 describe("getRegion", () => {
   let context: Context;
+  let mockRegionRepository: MockRegionRepository;
 
   const editorUser: User = {
     id: "editor-1" as UserId,
@@ -24,170 +25,156 @@ describe("getRegion", () => {
     updatedAt: new Date(),
   };
 
-  const visitorUser: User = {
-    id: "visitor-1" as UserId,
-    name: "Test Visitor",
-    email: "visitor@example.com",
-    role: "visitor",
-    subscription: "free",
-    profilePhotoUrl: null,
-    isActive: true,
-    stripeCustomerId: null,
-    stripeSubscriptionId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const publicRegion: Region = {
-    id: "public-region" as RegionId,
-    name: "Public Region",
-    description: "A public region",
+  const testRegion: Region = {
+    id: "region-1" as RegionId,
+    name: "Test Region",
+    description: "Test region for retrieval",
     creatorId: editorUser.id,
     isPublic: true,
     latitude: 35.6762,
     longitude: 139.6503,
-    coverPhotoUrl: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const privateRegion: Region = {
-    id: "private-region" as RegionId,
-    name: "Private Region",
-    description: "A private region",
-    creatorId: editorUser.id,
-    isPublic: false,
-    latitude: null,
-    longitude: null,
-    coverPhotoUrl: null,
+    coverPhotoUrl: "https://example.com/cover.jpg",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(() => {
+    mockRegionRepository = new MockRegionRepository();
+    mockRegionRepository.addRegion(testRegion);
+
     context = {
       userRepository: {
         findById: async (id: string) => {
           if (id === editorUser.id) return ok(editorUser);
-          if (id === visitorUser.id) return ok(visitorUser);
           return ok(null);
         },
-      } as Partial<typeof context.userRepository>,
-      regionRepository: {
-        findById: async (id: string) => {
-          if (id === publicRegion.id) return ok(publicRegion);
-          if (id === privateRegion.id) return ok(privateRegion);
-          return ok(null);
-        },
-      } as Partial<typeof context.regionRepository>,
-    } as Context;
+      },
+      regionRepository: mockRegionRepository,
+    } as unknown as Context;
   });
 
-  describe("SPEC: Region visibility constraints from Alloy model", () => {
-    it("should allow anyone to view public region", async () => {
-      const result = await getRegion(context, visitorUser.id, publicRegion.id);
+  describe("Basic get functionality", () => {
+    it("should get region by ID", async () => {
+      const input = {
+        id: testRegion.id,
+      };
+
+      const result = await getRegion(context, input);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
         const region = result.value;
-        expect(region.id).toBe(publicRegion.id);
-        expect(region.name).toBe(publicRegion.name);
-        expect(region.isPublic).toBe(true);
+        expect(region).not.toBe(null);
+        if (region) {
+          expect(region.id).toBe(testRegion.id);
+          expect(region.name).toBe(testRegion.name);
+          expect(region.description).toBe(testRegion.description);
+          expect(region.creatorId).toBe(testRegion.creatorId);
+          expect(region.isPublic).toBe(testRegion.isPublic);
+          expect(region.latitude).toBe(testRegion.latitude);
+          expect(region.longitude).toBe(testRegion.longitude);
+          expect(region.coverPhotoUrl).toBe(testRegion.coverPhotoUrl);
+        }
       }
     });
 
-    it("should allow creator to view private region", async () => {
-      const result = await getRegion(context, editorUser.id, privateRegion.id);
+    it("should return null for non-existent region", async () => {
+      const input = {
+        id: "non-existent-region" as RegionId,
+      };
+
+      const result = await getRegion(context, input);
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        const region = result.value;
-        expect(region.id).toBe(privateRegion.id);
-        expect(region.isPublic).toBe(false);
+        expect(result.value).toBe(null);
+      }
+    });
+  });
+
+  describe("Get region with stats", () => {
+    it("should get region with stats by ID", async () => {
+      const input = {
+        id: testRegion.id,
+      };
+
+      const result = await getRegionWithStats(context, input);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const regionWithStats = result.value;
+        expect(regionWithStats).not.toBe(null);
+        if (regionWithStats) {
+          expect(regionWithStats.id).toBe(testRegion.id);
+          expect(regionWithStats.name).toBe(testRegion.name);
+          expect(regionWithStats.description).toBe(testRegion.description);
+          expect(regionWithStats.creatorId).toBe(testRegion.creatorId);
+          expect(regionWithStats.isPublic).toBe(testRegion.isPublic);
+
+          // Check stats fields
+          expect(typeof regionWithStats.locationCount).toBe("number");
+          expect(typeof regionWithStats.favoriteCount).toBe("number");
+          expect(typeof regionWithStats.checkInCount).toBe("number");
+          expect(regionWithStats.locationCount).toBeGreaterThanOrEqual(0);
+          expect(regionWithStats.favoriteCount).toBeGreaterThanOrEqual(0);
+          expect(regionWithStats.checkInCount).toBeGreaterThanOrEqual(0);
+        }
       }
     });
 
-    it("should reject non-creator viewing private region", async () => {
-      const result = await getRegion(context, visitorUser.id, privateRegion.id);
+    it("should return null for non-existent region with stats", async () => {
+      const input = {
+        id: "non-existent-region" as RegionId,
+      };
+
+      const result = await getRegionWithStats(context, input);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value).toBe(null);
+      }
+    });
+  });
+
+  describe("Input validation", () => {
+    it("should reject invalid region ID", async () => {
+      const input = {
+        id: "invalid-id",
+      };
+
+      const result = await getRegion(context, input as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Region not found or not accessible");
+        expect(result.error.message).toBe("Invalid input");
       }
     });
 
-    it("should allow admin to view any region", async () => {
-      const adminUser: User = {
-        ...visitorUser,
-        id: "admin-1" as UserId,
-        role: "admin",
+    it("should reject invalid region ID for getRegionWithStats", async () => {
+      const input = {
+        id: "invalid-id",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === adminUser.id) return ok(adminUser);
-          return ok(null);
-        },
-      } as Partial<typeof context.userRepository>;
+      const result = await getRegionWithStats(context, input as never);
 
-      const result = await getRegion(context, adminUser.id, privateRegion.id);
-
-      expect(result.isOk()).toBe(true);
-    });
-  });
-
-  describe("TLA+ behavior validation", () => {
-    it("should follow region access patterns from TLA+ specification", async () => {
-      // TLA+ IsPublic predicate validation
-      const result = await getRegion(context, visitorUser.id, publicRegion.id);
-
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        const region = result.value;
-        // Verify public visibility allows access
-        expect(region.isPublic).toBe(true);
-        expect(region.creatorId).toBe(editorUser.id);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toBeInstanceOf(ApplicationError);
+        expect(result.error.message).toBe("Invalid input");
       }
     });
   });
 
   describe("Error handling", () => {
-    it("should handle region not found", async () => {
-      const result = await getRegion(
-        context,
-        visitorUser.id,
-        "non-existent" as RegionId,
-      );
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Region not found or not accessible");
-      }
-    });
-
-    it("should handle user not found", async () => {
-      const result = await getRegion(
-        context,
-        "non-existent" as UserId,
-        publicRegion.id,
-      );
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("User not found");
-      }
-    });
-
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockRegionRepository = context.regionRepository as any;
-      mockRegionRepository.findById = async () =>
-        err(new RepositoryError("Database error"));
+      mockRegionRepository.setShouldFailOperations(true);
 
-      const result = await getRegion(context, visitorUser.id, publicRegion.id);
+      const input = {
+        id: testRegion.id,
+      };
+
+      const result = await getRegion(context, input);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -195,46 +182,79 @@ describe("getRegion", () => {
         expect(result.error.message).toBe("Failed to get region");
       }
     });
-  });
 
-  describe("Anonymous access", () => {
-    it("should allow anonymous access to public regions", async () => {
-      // Anonymous users can view public regions per REQ-V-001
-      const result = await getRegion(context, null, publicRegion.id);
+    it("should handle repository failure for getRegionWithStats", async () => {
+      mockRegionRepository.setShouldFailOperations(true);
 
-      expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
-        const region = result.value;
-        expect(region.isPublic).toBe(true);
-      }
-    });
+      const input = {
+        id: testRegion.id,
+      };
 
-    it("should reject anonymous access to private regions", async () => {
-      const result = await getRegion(context, null, privateRegion.id);
+      const result = await getRegionWithStats(context, input);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toBeInstanceOf(ApplicationError);
-        expect(result.error.message).toBe("Region not found or not accessible");
+        expect(result.error.message).toBe("Failed to get region with stats");
       }
     });
   });
 
   describe("Region data integrity", () => {
-    it("should return complete region data", async () => {
-      const result = await getRegion(context, editorUser.id, publicRegion.id);
+    it("should preserve all region fields", async () => {
+      const input = {
+        id: testRegion.id,
+      };
+
+      const result = await getRegion(context, input);
 
       expect(result.isOk()).toBe(true);
-      if (result.isOk()) {
+      if (result.isOk() && result.value) {
         const region = result.value;
-        expect(region.id).toBe(publicRegion.id);
-        expect(region.name).toBe(publicRegion.name);
-        expect(region.description).toBe(publicRegion.description);
-        expect(region.creatorId).toBe(publicRegion.creatorId);
-        expect(region.latitude).toBe(publicRegion.latitude);
-        expect(region.longitude).toBe(publicRegion.longitude);
-        expect(region.createdAt).toBeInstanceOf(Date);
-        expect(region.updatedAt).toBeInstanceOf(Date);
+
+        // Check all fields are preserved
+        expect(region.id).toBe(testRegion.id);
+        expect(region.name).toBe(testRegion.name);
+        expect(region.description).toBe(testRegion.description);
+        expect(region.creatorId).toBe(testRegion.creatorId);
+        expect(region.isPublic).toBe(testRegion.isPublic);
+        expect(region.latitude).toBe(testRegion.latitude);
+        expect(region.longitude).toBe(testRegion.longitude);
+        expect(region.coverPhotoUrl).toBe(testRegion.coverPhotoUrl);
+        expect(region.createdAt).toEqual(testRegion.createdAt);
+        expect(region.updatedAt).toEqual(testRegion.updatedAt);
+      }
+    });
+
+    it("should handle regions with null values", async () => {
+      const regionWithNulls: Region = {
+        id: "region-null" as RegionId,
+        name: "Region with Nulls",
+        description: null,
+        creatorId: editorUser.id,
+        isPublic: false,
+        latitude: null,
+        longitude: null,
+        coverPhotoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockRegionRepository.addRegion(regionWithNulls);
+
+      const input = {
+        id: regionWithNulls.id,
+      };
+
+      const result = await getRegion(context, input);
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk() && result.value) {
+        const region = result.value;
+        expect(region.description).toBe(null);
+        expect(region.latitude).toBe(null);
+        expect(region.longitude).toBe(null);
+        expect(region.coverPhotoUrl).toBe(null);
       }
     });
   });

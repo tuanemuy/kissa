@@ -16,6 +16,7 @@ export const favoriteSchema = z.object({
   userId: userIdSchema,
   regionId: regionIdSchema.nullable(),
   locationId: locationIdSchema.nullable(),
+  targetType: z.enum(["region", "location"]),
   createdAt: z.date(),
 });
 export type Favorite = z.infer<typeof favoriteSchema>;

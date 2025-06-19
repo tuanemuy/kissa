@@ -1,3 +1,4 @@
+import { MockUserRepository } from "@/core/adapters/mock/userRepository";
 import type { User, UserId } from "@/core/domain/user/types";
 import { ApplicationError, AuthorizationError } from "@/lib/error";
 import { RepositoryError } from "@/lib/error";
@@ -8,6 +9,7 @@ import { updateUser } from "./updateUser";
 
 describe("updateUser", () => {
   let context: Context;
+  let mockUserRepository: MockUserRepository;
 
   const targetUser: User = {
     id: "target-user" as UserId,
@@ -45,16 +47,13 @@ describe("updateUser", () => {
   };
 
   beforeEach(() => {
+    mockUserRepository = new MockUserRepository();
+    mockUserRepository.addUser(targetUser, "hashed_password");
+    mockUserRepository.addUser(adminUser, "hashed_admin_password");
+
     context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === targetUser.id) return ok(targetUser);
-          if (id === adminUser.id) return ok(adminUser);
-          return ok(null);
-        },
-        update: async () => ok(updatedUser),
-      } as Partial<typeof context.userRepository>,
-    } as Context;
+      userRepository: mockUserRepository,
+    } as unknown as Context;
   });
 
   describe("SPEC: User update constraints from formal specifications", () => {
@@ -64,12 +63,10 @@ describe("updateUser", () => {
         email: "updated@example.com",
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -85,12 +82,10 @@ describe("updateUser", () => {
         role: "editor" as const,
       };
 
-      const result = await updateUser(
-        context,
-        adminUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isOk()).toBe(true);
     });
@@ -102,25 +97,16 @@ describe("updateUser", () => {
         role: "visitor",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === otherUser.id) return ok(otherUser);
-          if (id === targetUser.id) return ok(targetUser);
-          return ok(null);
-        },
-        update: async () => ok(updatedUser),
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(otherUser, "hashed_other_password");
 
       const input = {
         name: "Should Fail",
       };
 
-      const result = await updateUser(
-        context,
-        otherUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -138,12 +124,10 @@ describe("updateUser", () => {
         profilePhotoUrl: "https://example.com/photo.jpg",
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isOk()).toBe(true);
     });
@@ -156,12 +140,10 @@ describe("updateUser", () => {
         email: "valid@example.com",
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input as never,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      } as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -176,12 +158,10 @@ describe("updateUser", () => {
         email: "invalid-email",
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input as never,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      } as never);
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -197,12 +177,10 @@ describe("updateUser", () => {
         name: "Test Name",
       };
 
-      const result = await updateUser(
-        context,
-        "non-existent" as UserId,
-        "non-existent" as UserId,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: "non-existent" as UserId,
+        ...input,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -216,12 +194,10 @@ describe("updateUser", () => {
         name: "Test Name",
       };
 
-      const result = await updateUser(
-        context,
-        adminUser.id,
-        "non-existent" as UserId,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: "non-existent" as UserId,
+        ...input,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -231,21 +207,16 @@ describe("updateUser", () => {
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
-      mockUserRepository.update = async () =>
-        err(new RepositoryError("Update failed"));
+      mockUserRepository.setShouldFailOperations(true);
 
       const input = {
         name: "Test Name",
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -261,12 +232,10 @@ describe("updateUser", () => {
         role: "editor" as const,
       };
 
-      const result = await updateUser(
-        context,
-        adminUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isOk()).toBe(true);
     });
@@ -276,12 +245,10 @@ describe("updateUser", () => {
         role: "admin" as const,
       };
 
-      const result = await updateUser(
-        context,
-        targetUser.id,
-        targetUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: targetUser.id,
+        ...input,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -299,24 +266,16 @@ describe("updateUser", () => {
         subscription: "basic",
       };
 
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          return ok(null);
-        },
-        update: async () => ok({ ...editorUser, subscription: "premium" }),
-      } as Partial<typeof context.userRepository>;
+      mockUserRepository.addUser(editorUser, "hashed_editor_password");
 
       const input = {
         subscription: "premium" as const,
       };
 
-      const result = await updateUser(
-        context,
-        editorUser.id,
-        editorUser.id,
-        input,
-      );
+      const result = await updateUser(context, {
+        id: editorUser.id,
+        ...input,
+      });
 
       expect(result.isOk()).toBe(true);
     });
