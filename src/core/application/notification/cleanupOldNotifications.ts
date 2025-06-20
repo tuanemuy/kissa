@@ -7,7 +7,7 @@ import type { Context } from "../context";
 
 export const cleanupOldNotificationsInputSchema = z.object({
   userId: userIdSchema,
-  days: z.number().positive().default(30), // Default to 30 days
+  days: z.number().positive().optional(), // Default to 30 days
 });
 export type CleanupOldNotificationsInput = z.infer<
   typeof cleanupOldNotificationsInputSchema
@@ -24,7 +24,7 @@ export async function cleanupOldNotifications(
     );
   }
 
-  const { userId, days } = parseResult.value;
+  const { userId, days = 30 } = parseResult.value;
 
   // Verify user exists
   const userResult = await context.userRepository.findById(userId);

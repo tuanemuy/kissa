@@ -23,7 +23,10 @@ export async function sendPushNotification(
     );
   }
 
-  return context.pushNotificationService.sendPushNotification(
-    validationResult.value,
-  );
+  const params = {
+    ...validationResult.value,
+    priority: validationResult.value.priority ?? ("normal" as const),
+  };
+
+  return context.pushNotificationService.sendPushNotification(params);
 }

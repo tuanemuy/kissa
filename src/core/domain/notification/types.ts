@@ -120,8 +120,8 @@ export const sendPushNotificationParamsSchema = z.object({
   body: z.string().min(1).max(1000),
   data: z.record(z.string(), z.unknown()).optional(),
   channels: z.array(pushNotificationChannelSchema).optional(),
-  priority: z.enum(["low", "normal", "high"]).default("normal"),
-  ttl: z.number().optional(), // Time to live in seconds
+  priority: z.enum(["low", "normal", "high"]).optional(),
+  ttl: z.number().positive().optional(), // Time to live in seconds
 });
 export type SendPushNotificationParams = z.infer<
   typeof sendPushNotificationParamsSchema
