@@ -5,11 +5,12 @@
 - `CLAUDE.md` にガイダンスを記載した
 - `docs/requirements.md` に要件を定義した
 - `spec/*` に仕様をモデル化した
-- `docs/progress.md` に進捗を記録している
+- `docs/progress_test.md` に進捗を記録している
 
 ## タスク
 
 - アプリケーションサービスのテストを実装する
+- 型エラー、リンターエラーを解消する
 
 ## 条件
 
