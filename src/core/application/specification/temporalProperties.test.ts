@@ -5,16 +5,16 @@
  * 可能な限り再現するテストを実装します。
  */
 
-import { MockUserRepository } from "@/core/adapters/mock/userRepository";
-import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
-import { MockLocationRepository } from "@/core/adapters/mock/locationRepository";
 import { MockCheckInRepository } from "@/core/adapters/mock/checkInRepository";
 import { MockFavoriteRepository } from "@/core/adapters/mock/favoriteRepository";
-import type { Context } from "../context";
-import { createUser } from "../user/createUser";
-import { createRegion } from "../region/createRegion";
-import { createLocation } from "../location/createLocation";
+import { MockLocationRepository } from "@/core/adapters/mock/locationRepository";
+import { MockRegionRepository } from "@/core/adapters/mock/regionRepository";
+import { MockUserRepository } from "@/core/adapters/mock/userRepository";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Context } from "../context";
+import { createLocation } from "../location/createLocation";
+import { createRegion } from "../region/createRegion";
+import { createUser } from "../user/createUser";
 
 describe("TLA+ Temporal Properties", () => {
   let context: Context;
