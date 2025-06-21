@@ -9,6 +9,7 @@ import { MockCheckInRepository } from "../../adapters/mock/checkInRepository";
 import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createCheckIn } from "./createCheckIn";
 
 describe("createCheckIn", () => {
@@ -88,44 +89,11 @@ describe("createCheckIn", () => {
     mockUserRepository.addUser(adminUser, "hashed_password");
     mockLocationRepository.addLocation(testLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       locationRepository: mockLocationRepository,
       checkInRepository: mockCheckInRepository,
-      // Add minimal required services to satisfy Context interface
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      passwordHasher: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      authService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      regionRepository: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      favoriteRepository: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      moderationRepository: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      notificationRepository: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      notificationService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      pushNotificationService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      billingRepository: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      paymentGateway: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      mapsService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      fileStorageService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      metricsCollector: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      alertManager: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      backupService: {} as any,
-      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
-      privacyService: {} as any,
-    } satisfies Context;
+    });
   });
 
   describe("SPEC-INV-4,5,8,9: Check-in constraints from Alloy model", () => {
