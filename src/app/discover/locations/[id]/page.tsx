@@ -1,5 +1,6 @@
 import { getLocationByIdAction } from "@/actions/browsing";
 import { listCheckInsWithUserAction } from "@/actions/checkIn";
+import { getLocationImagesAction } from "@/actions/fileUpload";
 import { CheckInForm } from "@/app/components/checkin/CheckInForm";
 import { CheckInList } from "@/app/components/checkin/CheckInList";
 import { Badge } from "@/components/ui/badge";
@@ -31,12 +32,13 @@ interface Props {
 export default async function LocationDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const [location, checkInsResult] = await Promise.all([
+  const [location, checkInsResult, imageUrls] = await Promise.all([
     getLocationByIdAction(id),
     listCheckInsWithUserAction({
       filter: { locationId: id as LocationId },
       pagination: { page: 1, limit: 10 },
     }),
+    getLocationImagesAction(id).catch(() => []), // Fallback to empty array if no images
   ]);
 
   if (!location) {
@@ -44,8 +46,7 @@ export default async function LocationDetailPage({ params }: Props) {
   }
 
   const checkIns = checkInsResult.items || [];
-  // For now, we'll use an empty array as images are not implemented yet
-  const images: string[] = [];
+  const images = imageUrls || [];
 
   // Calculate average rating
   const averageRating =
@@ -68,14 +69,16 @@ export default async function LocationDetailPage({ params }: Props) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 lg:space-y-6">
           {/* Header */}
           <div>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{location.name}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                  {location.name}
+                </h1>
                 {location.category && (
                   <Badge variant="secondary" className="mb-2">
                     {location.category}
@@ -89,8 +92,8 @@ export default async function LocationDetailPage({ params }: Props) {
                 )}
               </div>
               {averageRating > 0 && (
-                <div className="text-right">
-                  <div className="flex items-center text-yellow-500">
+                <div className="text-right mt-2 sm:mt-0">
+                  <div className="flex items-center text-yellow-500 sm:justify-end">
                     <Star className="h-5 w-5 fill-current mr-1" />
                     <span className="text-lg font-semibold">
                       {averageRating.toFixed(1)}
@@ -185,7 +188,7 @@ export default async function LocationDetailPage({ params }: Props) {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 lg:space-y-6">
           {/* Quick Actions */}
           <Card>
             <CardHeader>

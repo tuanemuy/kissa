@@ -2,6 +2,7 @@ import {
   listPublicLocationsAction,
   searchLocationsAction,
 } from "@/actions/browsing";
+import { getLocationImagesAction } from "@/actions/fileUpload";
 import { LocationMap } from "@/app/components/location/location-map";
 import { AdvancedSearch } from "@/components/ui/advanced-search";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +57,9 @@ export default async function LocationsDiscoveryPage({ searchParams }: Props) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">場所を発見</h1>
-        <p className="text-muted-foreground mb-6">
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4">場所を発見</h1>
+        <p className="text-muted-foreground mb-4 lg:mb-6">
           地域の素晴らしい場所を探索してみてください
         </p>
 
@@ -66,17 +67,19 @@ export default async function LocationsDiscoveryPage({ searchParams }: Props) {
       </div>
 
       {locations.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">マップビュー</h2>
+        <div className="mb-6 lg:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">
+            マップビュー
+          </h2>
           <LocationMap
             locations={locations}
-            height="400px"
-            className="rounded-lg border"
+            height="300px"
+            className="rounded-lg border sm:h-96"
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {locations.map((location: LocationWithStats) => (
           <LocationCard key={location.id} location={location} />
         ))}
@@ -95,13 +98,13 @@ export default async function LocationsDiscoveryPage({ searchParams }: Props) {
       )}
 
       {count > 12 && (
-        <div className="mt-8 text-center">
-          <p className="text-muted-foreground">
+        <div className="mt-6 lg:mt-8 text-center">
+          <p className="text-sm text-muted-foreground mb-4">
             {Math.min(page * 12, count)} / {count} 件の場所を表示中
           </p>
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
             {page > 1 && (
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="w-full sm:w-auto">
                 <Link
                   href={{
                     pathname: "/discover/locations",
@@ -113,7 +116,7 @@ export default async function LocationsDiscoveryPage({ searchParams }: Props) {
               </Button>
             )}
             {page * 12 < count && (
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="w-full sm:w-auto">
                 <Link
                   href={{
                     pathname: "/discover/locations",
@@ -131,9 +134,13 @@ export default async function LocationsDiscoveryPage({ searchParams }: Props) {
   );
 }
 
-function LocationCard({ location }: { location: LocationWithStats }) {
-  // For now, we'll use an empty array as images are not implemented yet
-  const images: string[] = [];
+async function LocationCard({ location }: { location: LocationWithStats }) {
+  let images: string[] = [];
+  try {
+    images = await getLocationImagesAction(location.id);
+  } catch (error) {
+    console.warn(`Failed to load images for location ${location.id}:`, error);
+  }
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
