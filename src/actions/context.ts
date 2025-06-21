@@ -4,6 +4,7 @@ import { DrizzleTursoBillingRepository } from "@/core/adapters/drizzleTurso/bill
 import { DrizzleTursoCheckInRepository } from "@/core/adapters/drizzleTurso/checkInRepository";
 import { getDatabase } from "@/core/adapters/drizzleTurso/client";
 import { DrizzleTursoFavoriteRepository } from "@/core/adapters/drizzleTurso/favoriteRepository";
+import { DrizzleTursoFileUploadRepository } from "@/core/adapters/drizzleTurso/fileUploadRepository";
 import { DrizzleTursoLocationRepository } from "@/core/adapters/drizzleTurso/locationRepository";
 import { DrizzleTursoModerationRepository } from "@/core/adapters/drizzleTurso/moderationRepository";
 import { DrizzleTursoNotificationRepository } from "@/core/adapters/drizzleTurso/notificationRepository";
@@ -129,6 +130,7 @@ export function getContext(): Context {
     locationRepository: new DrizzleTursoLocationRepository(db),
     checkInRepository: new DrizzleTursoCheckInRepository(db),
     favoriteRepository: new DrizzleTursoFavoriteRepository(db),
+    fileUploadRepository: new DrizzleTursoFileUploadRepository(db),
     moderationRepository: new DrizzleTursoModerationRepository(db),
     notificationRepository: new DrizzleTursoNotificationRepository(db),
     notificationService: new NodemailerNotificationService(smtpConfig),

@@ -1,9 +1,11 @@
 "use server";
 
+import { attachFilesToEntity } from "@/core/application/fileUpload/attachFilesToEntity";
 import { getContext } from "./context";
+import { getSessionUser } from "./user";
 
 export async function uploadImagesAction(formData: FormData) {
-  const context = await getContext();
+  const context = getContext();
 
   const files = formData.getAll("images") as File[];
 
@@ -49,4 +51,29 @@ export async function uploadImagesAction(formData: FormData) {
   }
 
   return uploadResults;
+}
+
+export async function attachImagesToLocationAction(
+  locationId: string,
+  imageUrls: string[],
+) {
+  const context = getContext();
+
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const result = await attachFilesToEntity(context, {
+    entityType: "location_image",
+    entityId: locationId,
+    fileUrls: imageUrls,
+    uploadedBy: user.id,
+  });
+
+  if (result.isErr()) {
+    throw new Error(`Failed to attach images: ${result.error.message}`);
+  }
+
+  return result.value;
 }

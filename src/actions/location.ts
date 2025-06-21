@@ -23,6 +23,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 import { getContext } from "./context";
+import { attachImagesToLocationAction } from "./upload";
 
 // Schema for location form data that includes regionId
 const createLocationFormSchema = createLocationInputSchema.extend({
@@ -54,6 +55,19 @@ export async function createLocationAction(formData: FormData) {
 
   if (result.isErr()) {
     throw new Error(result.error.message);
+  }
+
+  // Handle uploaded images if any
+  const imagesData = formData.get("images");
+  if (imagesData && typeof imagesData === "string") {
+    try {
+      const imageUrls = JSON.parse(imagesData) as string[];
+      if (imageUrls.length > 0) {
+        await attachImagesToLocationAction(result.value.id, imageUrls);
+      }
+    } catch (error) {
+      console.warn("Failed to parse or attach images:", error);
+    }
   }
 
   revalidatePath(`/regions/${regionId}`);
