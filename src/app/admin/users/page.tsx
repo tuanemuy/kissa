@@ -23,6 +23,18 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 interface UserManagementPageProps {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    role?: string;
+    subscription?: string;
+    isActive?: string;
+  }>;
+}
+
+async function UsersList({
+  searchParams,
+}: {
   searchParams: {
     page?: string;
     search?: string;
@@ -30,9 +42,7 @@ interface UserManagementPageProps {
     subscription?: string;
     isActive?: string;
   };
-}
-
-async function UsersList({ searchParams }: UserManagementPageProps) {
+}) {
   const page = Number(searchParams.page) || 1;
   const search = searchParams.search || "";
   const role = searchParams.role;
@@ -260,9 +270,10 @@ async function UsersList({ searchParams }: UserManagementPageProps) {
   );
 }
 
-export default function UserManagementPage({
+export default async function UserManagementPage({
   searchParams,
 }: UserManagementPageProps) {
+  const params = await searchParams;
   return (
     <div className="space-y-6">
       <div>
@@ -282,7 +293,7 @@ export default function UserManagementPage({
           </div>
         }
       >
-        <UsersList searchParams={searchParams} />
+        <UsersList searchParams={params} />
       </Suspense>
     </div>
   );

@@ -28,9 +28,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 interface UserDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 async function UserDetailForm({ userId }: { userId: string }) {
@@ -267,7 +267,8 @@ async function UserDetailForm({ userId }: { userId: string }) {
   );
 }
 
-export default function UserDetailPage({ params }: UserDetailPageProps) {
+export default async function UserDetailPage({ params }: UserDetailPageProps) {
+  const { id } = await params;
   return (
     <div className="space-y-6">
       <div>
@@ -285,7 +286,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
           </div>
         }
       >
-        <UserDetailForm userId={params.id} />
+        <UserDetailForm userId={id} />
       </Suspense>
     </div>
   );

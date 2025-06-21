@@ -29,7 +29,7 @@ interface SearchParams {
 }
 
 interface Props {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }
 
 function getStatusIcon(status: ModerationStatus) {
@@ -257,7 +257,8 @@ function LoadingSkeleton() {
   );
 }
 
-export default function ModerationPage({ searchParams }: Props) {
+export default async function ModerationPage({ searchParams }: Props) {
+  const params = await searchParams;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -273,7 +274,7 @@ export default function ModerationPage({ searchParams }: Props) {
 
       <Suspense fallback={<LoadingSkeleton />}>
         <ModerationStats />
-        <ModerationTable searchParams={searchParams} />
+        <ModerationTable searchParams={params} />
       </Suspense>
     </div>
   );

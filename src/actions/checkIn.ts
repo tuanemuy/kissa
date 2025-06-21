@@ -189,3 +189,7 @@ export async function listCheckInsWithUserAction(query: ListCheckInsQuery) {
 
   return result.value;
 }
+
+export async function listLocationCheckInsAction(query: ListCheckInsQuery) {
+  return listCheckInsAction(query);
+}

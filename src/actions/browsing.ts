@@ -55,17 +55,33 @@ export async function searchRegionsAction(
   });
 }
 
-export async function searchLocationsAction(
-  searchTerm: string,
-  regionId?: string,
-  page = 1,
-  limit = 12,
-): Promise<{ items: LocationWithStats[]; count: number }> {
+export async function searchLocationsAction(input: {
+  query: string;
+  category?: string;
+  pagination: { page: number; limit: number };
+}): Promise<{ items: LocationWithStats[]; count: number }> {
   return discoverLocationsAction({
-    pagination: { page, limit },
-    filter: { search: searchTerm, regionId },
+    pagination: input.pagination,
+    filter: { search: input.query, category: input.category },
     sort: { field: "name", order: "asc" },
   });
+}
+
+export async function listPublicLocationsAction(input: {
+  pagination: { page: number; limit: number };
+  filter?: { category?: string };
+}): Promise<{ items: LocationWithStats[]; count: number }> {
+  return discoverLocationsAction({
+    pagination: input.pagination,
+    filter: input.filter,
+    sort: { field: "name", order: "asc" },
+  });
+}
+
+export async function getLocationByIdAction(
+  locationId: string,
+): Promise<LocationWithStats> {
+  return getPublicLocationAction(locationId);
 }
 
 export async function getPublicRegionAction(

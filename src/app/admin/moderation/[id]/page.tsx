@@ -23,7 +23,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function getStatusIcon(status: ModerationStatus) {
@@ -140,7 +140,8 @@ function ModerationActionForm({
 }
 
 export default async function ModerationDetailPage({ params }: Props) {
-  const item = await getModerationItemDetail(params.id);
+  const { id } = await params;
+  const item = await getModerationItemDetail(id);
 
   if (!item) {
     notFound();
