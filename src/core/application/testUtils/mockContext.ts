@@ -1,6 +1,7 @@
 // Mock context utilities for testing application services
 import { MockCheckInRepository } from "@/core/adapters/mock/checkInRepository";
 import { MockFavoriteRepository } from "@/core/adapters/mock/favoriteRepository";
+import { MockFileUploadRepository } from "@/core/adapters/mock/fileUploadRepository";
 import { MockLocationRepository } from "@/core/adapters/mock/locationRepository";
 import { MockNotificationRepository } from "@/core/adapters/mock/notificationRepository";
 import { MockNotificationService } from "@/core/adapters/mock/notificationService";
@@ -663,6 +664,9 @@ export function createMockContext(overrides: Partial<Context> = {}): Context {
 
     // Favorite domain
     favoriteRepository: new MockFavoriteRepository(),
+
+    // File upload domain
+    fileUploadRepository: new MockFileUploadRepository(),
 
     // Moderation domain
     moderationRepository: new MockModerationRepository(),

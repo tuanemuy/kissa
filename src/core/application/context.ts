@@ -5,6 +5,7 @@ import type { CheckInRepository } from "../domain/checkIn/ports/checkInRepositor
 import type { FileStorageService } from "../domain/common/ports/fileStorageService";
 import type { MapsService } from "../domain/common/ports/mapsService";
 import type { FavoriteRepository } from "../domain/favorite/ports/favoriteRepository";
+import type { FileUploadRepository } from "../domain/fileUpload/ports/fileUploadRepository";
 import type { LocationRepository } from "../domain/location/ports/locationRepository";
 import type { ModerationRepository } from "../domain/moderation/ports/moderationRepository";
 import type { AlertManager } from "../domain/monitoring/ports/alertManager";
@@ -35,6 +36,9 @@ export interface Context {
 
   // Favorite domain
   favoriteRepository: FavoriteRepository;
+
+  // File upload domain
+  fileUploadRepository: FileUploadRepository;
 
   // Moderation domain
   moderationRepository: ModerationRepository;
