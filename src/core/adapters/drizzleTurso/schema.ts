@@ -264,7 +264,13 @@ export const fileUploads = sqliteTable("file_uploads", {
   fileType: text("file_type").notNull(), // mime type
   fileSize: integer("file_size").notNull(), // bytes
   entityType: text("entity_type", {
-    enum: ["user_profile", "region_cover", "location_cover", "check_in_photo"],
+    enum: [
+      "user_profile",
+      "region_cover",
+      "location_cover",
+      "location_image",
+      "check_in_photo",
+    ],
   }),
   entityId: text("entity_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
