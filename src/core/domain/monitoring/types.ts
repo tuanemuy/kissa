@@ -20,8 +20,11 @@ export const metricSchema = z.object({
 });
 export type Metric = z.infer<typeof metricSchema>;
 
+export const alertRuleIdSchema = z.string().uuid().brand("alertRuleId");
+export type AlertRuleId = z.infer<typeof alertRuleIdSchema>;
+
 export const alertRuleSchema = z.object({
-  id: z.string().uuid(),
+  id: alertRuleIdSchema,
   name: z.string(),
   metric: z.string(),
   condition: z.string(),

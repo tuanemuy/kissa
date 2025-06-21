@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { AlertManager } from "@/core/domain/monitoring/ports/alertManager";
-import type { Alert, AlertRule } from "@/core/domain/monitoring/types";
+import type {
+  Alert,
+  AlertRule,
+  AlertRuleId,
+} from "@/core/domain/monitoring/types";
 import { AnyError } from "@/lib/errors";
 import { type Result, err, ok } from "neverthrow";
 
@@ -14,7 +18,7 @@ export class MemoryAlertManager implements AlertManager {
     try {
       const newRule: AlertRule = {
         ...rule,
-        id: randomUUID(),
+        id: randomUUID() as AlertRuleId,
         createdAt: new Date(),
       };
 
