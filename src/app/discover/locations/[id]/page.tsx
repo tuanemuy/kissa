@@ -1,234 +1,306 @@
-"use client";
-
-import { getPublicLocationWithStatusAction } from "@/actions/browsing";
-import { FavoriteButton } from "@/app/components/favorite/FavoriteButton";
+import { getLocationByIdAction } from "@/actions/browsing";
+import { listCheckInsWithUserAction } from "@/actions/checkIn";
+import { CheckInForm } from "@/app/components/checkin/CheckInForm";
+import { CheckInList } from "@/app/components/checkin/CheckInList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import type { LocationWithStats } from "@/core/domain/location/types";
+import { ImageGallery } from "@/components/ui/image-gallery";
+import { Map as MapComponent } from "@/components/ui/map";
+import { MapMarker } from "@/components/ui/map-marker";
+import type { CheckIn } from "@/core/domain/checkIn/types";
+import type { LocationId } from "@/core/domain/location/types";
 import {
   ArrowLeft,
-  Calendar,
   Clock,
   Globe,
   Mail,
   MapPin,
+  MessageCircle,
   Phone,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-export default function DiscoverLocationPage() {
-  const params = useParams();
-  const locationId = params.id as string;
+interface Props {
+  params: Promise<{ id: string }>;
+}
 
-  const [location, setLocation] = useState<
-    (LocationWithStats & { isFavorited: boolean }) | null
-  >(null);
-  const [loading, setLoading] = useState(true);
+export default async function LocationDetailPage({ params }: Props) {
+  const { id } = await params;
 
-  const loadLocation = useCallback(async () => {
-    try {
-      const result = await getPublicLocationWithStatusAction(locationId);
-      setLocation(result);
-    } catch (error) {
-      console.error("Failed to load location:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [locationId]);
-
-  useEffect(() => {
-    loadLocation();
-  }, [loadLocation]);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="text-center py-12">
-          <div className="text-muted-foreground">Loading location...</div>
-        </div>
-      </div>
-    );
-  }
+  const [location, checkInsResult] = await Promise.all([
+    getLocationByIdAction(id),
+    listCheckInsWithUserAction({
+      filter: { locationId: id as LocationId },
+      pagination: { page: 1, limit: 10 },
+    }),
+  ]);
 
   if (!location) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="text-center py-12">
-          <div className="text-muted-foreground">
-            Location not found or not public.
-          </div>
-          <Button asChild className="mt-4">
-            <Link href="/discover">Back to Discovery</Link>
-          </Button>
-        </div>
-      </div>
-    );
+    notFound();
   }
 
-  const contactInfo = location.contactInfo as {
-    phone?: string;
-    email?: string;
-    website?: string;
-  } | null;
-  const operatingHours = location.operatingHours as Record<
-    string,
-    string
-  > | null;
+  const checkIns = checkInsResult.items || [];
+  // For now, we'll use an empty array as images are not implemented yet
+  const images: string[] = [];
+
+  // Calculate average rating
+  const averageRating =
+    checkIns.length > 0
+      ? checkIns.reduce(
+          (sum: number, checkIn: CheckIn) => sum + (checkIn.rating || 0),
+          0,
+        ) / checkIns.length
+      : 0;
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/discover/regions/${location.regionId}`}>
-              <ArrowLeft className="h-4 w-4" />
-              Back to Region
-            </Link>
-          </Button>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      {/* Back Navigation */}
+      <div className="mb-6">
+        <Button asChild variant="ghost" className="text-muted-foreground">
+          <Link href="/discover/locations">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            場所一覧に戻る
+          </Link>
+        </Button>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-bold">{location.name}</h1>
-                <div className="flex items-center gap-3">
-                  <FavoriteButton
-                    targetId={location.id}
-                    targetType="location"
-                    isFavorited={location.isFavorited}
-                  />
-                  {location.category && (
-                    <Badge variant="secondary">{location.category}</Badge>
-                  )}
-                </div>
-              </div>
-
-              {location.description && (
-                <p className="text-muted-foreground mb-4">
-                  {location.description}
-                </p>
-              )}
-
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                {location.address && (
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {location.address}
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Header */}
+          <div>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">{location.name}</h1>
+                {location.category && (
+                  <Badge variant="secondary" className="mb-2">
+                    {location.category}
+                  </Badge>
                 )}
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Created {new Date(location.createdAt).toLocaleDateString()}
-                </div>
+                {location.address && (
+                  <p className="text-muted-foreground flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    {location.address}
+                  </p>
+                )}
               </div>
+              {averageRating > 0 && (
+                <div className="text-right">
+                  <div className="flex items-center text-yellow-500">
+                    <Star className="h-5 w-5 fill-current mr-1" />
+                    <span className="text-lg font-semibold">
+                      {averageRating.toFixed(1)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {checkIns.length} 件のレビュー
+                  </p>
+                </div>
+              )}
             </div>
 
-            {location.latitude !== null && location.longitude !== null && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Location</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Latitude: {location.latitude}, Longitude:{" "}
-                    {location.longitude}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    * Map integration coming soon
-                  </p>
-                </CardContent>
-              </Card>
+            {location.description && (
+              <p className="text-muted-foreground">{location.description}</p>
             )}
           </div>
 
-          <div className="space-y-6">
-            {(contactInfo?.phone ||
-              contactInfo?.email ||
-              contactInfo?.website) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {contactInfo?.phone && (
-                    <div className="flex items-center">
-                      <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">{contactInfo.phone}</span>
-                    </div>
-                  )}
-                  {contactInfo?.email && (
-                    <div className="flex items-center">
-                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">{contactInfo.email}</span>
-                    </div>
-                  )}
-                  {contactInfo?.website && (
-                    <div className="flex items-center">
-                      <Globe className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <a
-                        href={contactInfo.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {contactInfo.website}
-                      </a>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+          {/* Images */}
+          {images.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>写真</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ImageGallery images={images} alt={location.name} />
+              </CardContent>
+            </Card>
+          )}
 
-            {operatingHours && Object.keys(operatingHours).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Operating Hours</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Object.entries(operatingHours).map(([day, hours]) => (
-                      <div key={day} className="flex justify-between text-sm">
-                        <span className="capitalize font-medium">{day}</span>
+          {/* Map */}
+          {location.latitude !== null && location.longitude !== null && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  場所
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MapComponent
+                  center={{ lat: location.latitude, lng: location.longitude }}
+                  zoom={15}
+                  height="300px"
+                  onMapReady={(map) => {
+                    if (
+                      location.latitude !== null &&
+                      location.longitude !== null
+                    ) {
+                      const marker = new google.maps.Marker({
+                        position: {
+                          lat: location.latitude,
+                          lng: location.longitude,
+                        },
+                        map,
+                        title: location.name,
+                      });
+
+                      const infoWindow = new google.maps.InfoWindow({
+                        content: `<h3>${location.name}</h3><p>${location.address || ""}</p>`,
+                      });
+
+                      marker.addListener("click", () => {
+                        infoWindow.open(map, marker);
+                      });
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Check-ins and Reviews */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageCircle className="h-5 w-5 mr-2" />
+                チェックイン・レビュー ({checkIns.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>チェックインを読み込み中...</div>}>
+                <CheckInList checkIns={checkIns} />
+              </Suspense>
+
+              {checkIns.length === 0 && (
+                <p className="text-muted-foreground text-center py-8">
+                  まだチェックインがありません。最初のレビューを投稿してみませんか？
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>チェックイン</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<div>読み込み中...</div>}>
+                <CheckInForm
+                  locationId={location.id}
+                  locationName={location.name}
+                  mode="create"
+                />
+              </Suspense>
+            </CardContent>
+          </Card>
+
+          {/* Contact Information */}
+          {location.contactInfo && (
+            <Card>
+              <CardHeader>
+                <CardTitle>連絡先</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {location.contactInfo.phone && (
+                  <div className="flex items-center">
+                    <Phone className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <span className="text-sm">
+                      {location.contactInfo.phone}
+                    </span>
+                  </div>
+                )}
+                {location.contactInfo.email && (
+                  <div className="flex items-center">
+                    <Mail className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <a
+                      href={`mailto:${location.contactInfo.email}`}
+                      className="text-sm hover:underline"
+                    >
+                      {location.contactInfo.email}
+                    </a>
+                  </div>
+                )}
+                {location.contactInfo.website && (
+                  <div className="flex items-center">
+                    <Globe className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <a
+                      href={location.contactInfo.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm hover:underline"
+                    >
+                      ウェブサイト
+                    </a>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Operating Hours */}
+          {location.operatingHours && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  営業時間
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  {Object.entries(location.operatingHours)
+                    .filter(([_, hours]) => hours)
+                    .map(([day, hours]) => (
+                      <div key={day} className="flex justify-between">
+                        <span className="capitalize font-medium">{day}:</span>
                         <span className="text-muted-foreground">
-                          {hours as string}
+                          {String(hours)}
                         </span>
                       </div>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Statistics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="text-sm">Check-ins</span>
-                  </div>
-                  <Badge variant="outline">{location.checkInCount}</Badge>
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Want to check in at this location?
-              </p>
-              <Button asChild>
-                <Link href="/auth/register">Create Account</Link>
-              </Button>
-            </div>
-          </div>
+          {/* Location Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>詳細情報</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {location.latitude !== null && location.longitude !== null && (
+                <>
+                  <div className="flex justify-between">
+                    <span>緯度:</span>
+                    <span className="text-muted-foreground">
+                      {location.latitude.toFixed(6)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>経度:</span>
+                    <span className="text-muted-foreground">
+                      {location.longitude.toFixed(6)}
+                    </span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between">
+                <span>作成日:</span>
+                <span className="text-muted-foreground">
+                  {new Date(location.createdAt).toLocaleDateString("ja-JP")}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

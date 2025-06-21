@@ -1,6 +1,7 @@
 "use client";
 
 import { discoverRegionsAction, searchRegionsAction } from "@/actions/browsing";
+import { AdvancedSearch } from "@/components/ui/advanced-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,30 +64,14 @@ export default function DiscoverPage() {
     <div className="container mx-auto py-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">Discover Amazing Places</h1>
+          <h1 className="text-3xl font-bold mb-4">地域を発見</h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Explore regions and locations created by our community
+            コミュニティが作成した地域と場所を探索してみてください
           </p>
 
-          <form onSubmit={handleSearch} className="max-w-md mx-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search regions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4"
-              />
-              <Button
-                type="submit"
-                disabled={isSearching}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 px-3"
-                size="sm"
-              >
-                {isSearching ? "..." : "Search"}
-              </Button>
-            </div>
-          </form>
+          <div className="max-w-2xl mx-auto">
+            <AdvancedSearch type="regions" />
+          </div>
         </div>
 
         {loading && regions.length === 0 ? (
