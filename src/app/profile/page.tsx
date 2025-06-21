@@ -1,4 +1,7 @@
 import { getSessionUser } from "@/actions/user";
+import { CheckInHistory } from "@/app/components/profile/CheckInHistory";
+import { NotificationSettings } from "@/app/components/profile/NotificationSettings";
+import { PrivacySettings } from "@/app/components/profile/PrivacySettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Edit, Mail, Save, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -28,7 +32,7 @@ async function ProfileInfo() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">
                 メールアドレス
@@ -123,59 +127,48 @@ async function ProfileInfo() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>アカウント設定</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">通知設定</p>
-              <p className="text-xs text-muted-foreground">
-                メール通知やプッシュ通知の設定を管理
+      {/* タブでコンテンツを整理 */}
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="settings">アカウント設定</TabsTrigger>
+          <TabsTrigger value="notifications">通知設定</TabsTrigger>
+          <TabsTrigger value="privacy">プライバシー</TabsTrigger>
+          <TabsTrigger value="history">チェックイン履歴</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>アカウント設定</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                アカウントの基本設定やデータ管理を行えます。
               </p>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              <Edit className="h-4 w-4 mr-2" />
-              設定
-            </Button>
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button variant="outline" asChild>
+                  <Link href="#notifications">通知設定</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="#privacy">プライバシー設定</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <Separator />
+        <TabsContent value="notifications">
+          <NotificationSettings />
+        </TabsContent>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">プライバシー設定</p>
-              <p className="text-xs text-muted-foreground">
-                プロフィールの公開範囲とプライバシー設定
-              </p>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              <Edit className="h-4 w-4 mr-2" />
-              設定
-            </Button>
-          </div>
+        <TabsContent value="privacy">
+          <PrivacySettings />
+        </TabsContent>
 
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">データのエクスポート</p>
-              <p className="text-xs text-muted-foreground">
-                アカウントデータをダウンロード
-              </p>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              <Edit className="h-4 w-4 mr-2" />
-              エクスポート
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            ※ これらの機能は近日公開予定です
-          </p>
-        </CardContent>
-      </Card>
+        <TabsContent value="history">
+          <CheckInHistory userId={user.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
