@@ -8,6 +8,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { sendPushNotification } from "./sendPushNotification";
 
 // Mock push notification service
@@ -31,6 +32,91 @@ class MockPushNotificationService {
       },
     ] as PushNotificationJob[]);
   }
+
+  async registerDeviceToken(
+    userId: string,
+    token: string,
+    platform: "web" | "ios" | "android",
+  ) {
+    return ok({
+      id: "device-token-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: userId as any,
+      token,
+      platform,
+      isActive: true,
+      createdAt: new Date(),
+      lastUsedAt: new Date(),
+    });
+  }
+
+  async unregisterDeviceToken() {
+    return ok(undefined);
+  }
+
+  async getUserDeviceTokens() {
+    return ok([]);
+  }
+
+  async sendToChannel(
+    // biome-ignore lint/suspicious/noExplicitAny: Mock method accepts any channel for testing
+    channel: any,
+    userId: string,
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ) {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: userId as any,
+      channel,
+      status: "pending" as const,
+      payload: { title, body, data },
+      scheduledAt: new Date(),
+      retryCount: 0,
+    });
+  }
+
+  async getNotificationStatus() {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: "user-123" as any,
+      channel: "web" as const,
+      status: "pending" as const,
+      payload: {},
+      scheduledAt: new Date(),
+      retryCount: 0,
+    });
+  }
+
+  async retryFailedNotification() {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: "user-123" as any,
+      channel: "web" as const,
+      status: "pending" as const,
+      payload: {},
+      scheduledAt: new Date(),
+      retryCount: 1,
+    });
+  }
+
+  async processNotificationQueue() {
+    return ok(0);
+  }
+
+  async updateDeliveryStatus() {
+    return ok(undefined);
+  }
 }
 
 describe("sendPushNotification", () => {
@@ -39,9 +125,9 @@ describe("sendPushNotification", () => {
   const validUserId = "550e8400-e29b-41d4-a716-446655440001" as UserId;
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       pushNotificationService: new MockPushNotificationService(),
-    } as Context;
+    });
   });
 
   describe("successful push notifications", () => {

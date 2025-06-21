@@ -9,6 +9,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { updateLocation } from "./updateLocation";
 
 describe("updateLocation", () => {
@@ -86,11 +87,11 @@ describe("updateLocation", () => {
     mockRegionRepository.addRegion(testRegion);
     mockLocationRepository.addLocation(testLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("REQ-E-025: Location detail update functionality from spec", () => {

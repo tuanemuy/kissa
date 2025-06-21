@@ -5,6 +5,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createUser } from "./createUser";
 
 describe("createUser", () => {
@@ -29,13 +30,13 @@ describe("createUser", () => {
       updatedAt: new Date(),
     };
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       passwordHasher: {
         hash: async (password: string) => `hashed_${password}`,
         verify: async () => true,
       },
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-INV-1: User creation constraints from Alloy model", () => {

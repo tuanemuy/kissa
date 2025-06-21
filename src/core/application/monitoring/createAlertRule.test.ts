@@ -3,6 +3,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createAlertRule } from "./createAlertRule";
 
 // Mock alert manager
@@ -24,8 +25,62 @@ class MockAlertManager {
       severity: params.severity,
       enabled: params.enabled,
       createdAt: new Date(),
-      updatedAt: new Date(),
     } as AlertRule);
+  }
+
+  async updateRule(id: string, updates: Partial<AlertRule>) {
+    return ok({
+      id: id as AlertRuleId,
+      name: "Updated Rule",
+      metric: "cpu_usage_percent",
+      condition: "greater_than",
+      threshold: 90,
+      severity: "critical" as const,
+      enabled: true,
+      createdAt: new Date(),
+      ...updates,
+    } as AlertRule);
+  }
+
+  async deleteRule(id: string) {
+    return ok(undefined);
+  }
+
+  async getRules() {
+    return ok([] as AlertRule[]);
+  }
+
+  async triggerAlert(
+    ruleId: string,
+    message: string,
+    metadata?: Record<string, unknown>,
+  ) {
+    return ok({
+      id: "alert-123",
+      ruleId,
+      message,
+      severity: "critical" as const,
+      triggeredAt: new Date(),
+      metadata,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock alert object for testing
+    } as any);
+  }
+
+  async resolveAlert(alertId: string) {
+    return ok({
+      id: alertId,
+      ruleId: "rule-123",
+      message: "Alert resolved",
+      severity: "critical" as const,
+      triggeredAt: new Date(),
+      resolvedAt: new Date(),
+      // biome-ignore lint/suspicious/noExplicitAny: Mock alert object for testing
+    } as any);
+  }
+
+  async getActiveAlerts() {
+    // biome-ignore lint/suspicious/noExplicitAny: Mock alert array for testing
+    return ok([] as any[]);
   }
 }
 
@@ -33,9 +88,9 @@ describe("createAlertRule", () => {
   let context: Context;
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       alertManager: new MockAlertManager(),
-    } as Context;
+    });
   });
 
   describe("successful alert rule creation", () => {
@@ -129,6 +184,7 @@ describe("createAlertRule", () => {
         condition: "greater_than",
         threshold: 1000,
         severity: "critical",
+        enabled: true,
       });
 
       // Assert
@@ -411,7 +467,6 @@ describe("createAlertRule", () => {
         );
         expect(typeof result.value.enabled).toBe("boolean");
         expect(result.value.createdAt).toBeInstanceOf(Date);
-        expect(result.value.updatedAt).toBeInstanceOf(Date);
       }
     });
 
@@ -435,7 +490,6 @@ describe("createAlertRule", () => {
           severity: params.severity,
           enabled: params.enabled,
           createdAt: new Date(),
-          updatedAt: new Date(),
         } as AlertRule);
       };
 

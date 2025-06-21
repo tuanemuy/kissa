@@ -4,6 +4,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import type { SystemStatistics } from "./getSystemStatistics";
 import { getSystemStatistics } from "./getSystemStatistics";
 
@@ -53,7 +54,7 @@ describe("getSystemStatistics", () => {
   ];
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       userRepository: {
         list: async () => ok({ items: users, count: users.length }),
         // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
@@ -97,7 +98,7 @@ describe("getSystemStatistics", () => {
           }),
         // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
       } as any,
-    } as Context;
+    });
   });
 
   describe("Basic functionality", () => {

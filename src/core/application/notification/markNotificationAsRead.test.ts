@@ -9,6 +9,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { markNotificationAsRead } from "./markNotificationAsRead";
 
 describe("markNotificationAsRead", () => {
@@ -35,9 +36,9 @@ describe("markNotificationAsRead", () => {
   };
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       notificationRepository: new MockNotificationRepository(),
-    } as Context;
+    });
   });
 
   describe("successful operations", () => {

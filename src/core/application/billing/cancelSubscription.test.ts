@@ -4,6 +4,7 @@ import { ApplicationError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { cancelSubscription } from "./cancelSubscription";
 
 describe("cancelSubscription", () => {
@@ -64,11 +65,11 @@ describe("cancelSubscription", () => {
         ok({ id: "sub_test123", status: "canceled" }),
     };
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       billingRepository: mockBillingRepository,
       paymentGateway: mockPaymentGateway,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-TLA+: Subscription cancellation workflow", () => {

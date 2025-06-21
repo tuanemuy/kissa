@@ -6,6 +6,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { cleanupOldNotifications } from "./cleanupOldNotifications";
 
 describe("cleanupOldNotifications", () => {
@@ -26,10 +27,10 @@ describe("cleanupOldNotifications", () => {
   };
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       userRepository: new MockUserRepository(),
       notificationRepository: new MockNotificationRepository(),
-    } as Context;
+    });
   });
 
   describe("successful cleanup", () => {

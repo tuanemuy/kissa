@@ -9,6 +9,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createLocation } from "./createLocation";
 
 describe("createLocation", () => {
@@ -68,11 +69,11 @@ describe("createLocation", () => {
     mockUserRepository.addUser(visitorUser, "hashed_password");
     mockRegionRepository.addRegion(testRegion);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-INV-1,2,3: Location creation constraints from Alloy model", () => {

@@ -10,6 +10,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createNotification } from "./createNotification";
 
 describe("createNotification", () => {
@@ -62,10 +63,10 @@ describe("createNotification", () => {
     mockUserRepository.addUser(inactiveUser, "hashed-password");
     mockNotificationRepository.addNotification(mockNotification);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       notificationRepository: mockNotificationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: Notification creation constraints from formal specifications", () => {

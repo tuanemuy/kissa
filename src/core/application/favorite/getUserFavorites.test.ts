@@ -15,6 +15,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getUserFavorites } from "./getUserFavorites";
 
 describe("getUserFavorites", () => {
@@ -142,29 +143,9 @@ describe("getUserFavorites", () => {
       countFavoritesByUser: async () => ok(testFavorites.length),
     };
 
-    const mockUserRepository: Partial<UserRepository> = {
-      findById: async (id: string) => {
-        if (id === editorUser.id) return ok(editorUser);
-        if (id === visitorUser.id) return ok(visitorUser);
-        if (id === adminUser.id) return ok(adminUser);
-        return ok(null);
-      },
-    };
-
-    const mockRegionRepository: Partial<RegionRepository> = {
-      findById: async () => ok(testRegion),
-    };
-
-    const mockLocationRepository: Partial<LocationRepository> = {
-      findById: async () => ok(testLocation),
-    };
-
-    context = {
-      userRepository: mockUserRepository,
+    context = createMockContext({
       favoriteRepository: mockFavoriteRepository,
-      regionRepository: mockRegionRepository,
-      locationRepository: mockLocationRepository,
-    } as Context;
+    });
   });
 
   describe("SPEC: Favorite access constraints from formal specifications", () => {

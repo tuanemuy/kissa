@@ -5,6 +5,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { deleteUser } from "./deleteUser";
 
 describe("deleteUser", () => {
@@ -50,9 +51,9 @@ describe("deleteUser", () => {
     mockUserRepository.addUser(targetUser, "hashed_password");
     mockUserRepository.addUser(adminUser, "hashed_admin_password");
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: User deletion constraints from formal specifications", () => {

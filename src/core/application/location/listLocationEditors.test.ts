@@ -10,6 +10,7 @@ import { ApplicationError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { listLocationEditors } from "./listLocationEditors";
 
 describe("listLocationEditors", () => {
@@ -87,10 +88,10 @@ describe("listLocationEditors", () => {
       },
     };
 
-    context = {
+    context = createMockContext({
       locationRepository: mockLocationRepository,
       regionRepository: mockRegionRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-TLA+: Location editor access control", () => {

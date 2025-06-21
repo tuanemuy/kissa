@@ -5,6 +5,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getUserById } from "./getUserById";
 
 describe("getUserById", () => {
@@ -29,9 +30,9 @@ describe("getUserById", () => {
     mockUserRepository = new MockUserRepository();
     mockUserRepository.addUser(testUser, "hashed_password");
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: User retrieval constraints from formal specifications", () => {

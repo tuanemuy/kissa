@@ -4,6 +4,7 @@ import { ApplicationError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getBillingHistory } from "./getBillingHistory";
 
 describe("getBillingHistory", () => {
@@ -75,10 +76,10 @@ describe("getBillingHistory", () => {
       calculateTotalSpent: async () => ok(2000), // $20.00 total
     };
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       billingRepository: mockBillingRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-TLA+: Billing history retrieval", () => {

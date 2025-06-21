@@ -5,6 +5,7 @@ import { ApplicationError } from "@/lib/error";
 import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { updateRegion } from "./updateRegion";
 
 describe("updateRegion", () => {
@@ -42,15 +43,9 @@ describe("updateRegion", () => {
     mockRegionRepository = new MockRegionRepository();
     mockRegionRepository.addRegion(testRegion);
 
-    context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          return ok(null);
-        },
-      },
+    context = createMockContext({
       regionRepository: mockRegionRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("Basic update functionality", () => {

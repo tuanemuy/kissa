@@ -9,6 +9,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getLocation } from "./getLocation";
 
 describe("getLocation", () => {
@@ -99,11 +100,11 @@ describe("getLocation", () => {
     mockLocationRepository.addLocation(publicLocation);
     mockLocationRepository.addLocation(privateLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: Location visibility constraints from Alloy model", () => {

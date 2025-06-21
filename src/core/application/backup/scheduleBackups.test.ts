@@ -2,6 +2,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import {
   type BackupScheduleConfig,
   DEFAULT_BACKUP_SCHEDULE,
@@ -15,24 +16,28 @@ vi.mock("./createBackup", () => ({
 
 describe("scheduleBackups", () => {
   let context: Context;
-  let mockBackupService: {
-    // biome-ignore lint/suspicious/noExplicitAny: Mock service requires flexible typing for tests
-    createBackup: (input: any) => Promise<any>;
-    // biome-ignore lint/suspicious/noExplicitAny: Mock service requires flexible typing for tests
-    cleanupExpiredBackups: (retentionDays: number) => Promise<any>;
-  };
+  // biome-ignore lint/suspicious/noExplicitAny: Mock service doesn't have typed interface
+  let mockBackupService: any;
   // biome-ignore lint/suspicious/noExplicitAny: Vitest spy requires any type
   let consoleLogSpy: any;
 
   beforeEach(() => {
     mockBackupService = {
       createBackup: async () => ok({ id: "backup-001" }),
-      cleanupExpiredBackups: async () => ok(undefined),
+      getBackupStatus: async () =>
+        ok({ id: "backup-001", status: "completed" }),
+      listBackups: async () => ok([]),
+      deleteBackup: async () => ok(undefined),
+      restoreBackup: async () => ok({ id: "restore-001", status: "pending" }),
+      getRestoreStatus: async () =>
+        ok({ id: "restore-001", status: "completed" }),
+      validateBackup: async () => ok(true),
+      cleanupExpiredBackups: async () => ok(0),
     };
 
-    context = {
+    context = createMockContext({
       backupService: mockBackupService,
-    } as unknown as Context;
+    });
 
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });

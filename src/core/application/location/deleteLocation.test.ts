@@ -9,6 +9,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { deleteLocation } from "./deleteLocation";
 
 describe("deleteLocation", () => {
@@ -113,11 +114,11 @@ describe("deleteLocation", () => {
     mockRegionRepository.addRegion(testRegion);
     mockLocationRepository.addLocation(testLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-INV-6: Editor role validation (Alloy constraint)", () => {

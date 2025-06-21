@@ -3,6 +3,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createMonitoringMiddleware } from "./monitoringMiddleware";
 
 // Mock metrics collector
@@ -28,6 +29,39 @@ class MockMetricsCollector {
     return ok(undefined);
   }
 
+  async recordMetric(metric: {
+    name: string;
+    type: MetricType;
+    value: number;
+    labels?: Record<string, string>;
+    timestamp: Date;
+  }) {
+    this.recordedMetrics.push(metric);
+    return ok(undefined);
+  }
+
+  async getMetrics(timeRange: { start: Date; end: Date }) {
+    return ok(
+      this.recordedMetrics.filter(
+        (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end,
+      ),
+    );
+  }
+
+  async recordHealthCheck(healthCheck: {
+    service: string;
+    status: "healthy" | "unhealthy" | "degraded";
+    responseTime: number;
+    timestamp: Date;
+    details?: Record<string, unknown>;
+  }) {
+    return ok(undefined);
+  }
+
+  async getHealthStatus() {
+    return ok([]);
+  }
+
   getRecordedMetrics() {
     return this.recordedMetrics;
   }
@@ -44,9 +78,9 @@ describe("monitoringMiddleware", () => {
 
   beforeEach(() => {
     mockMetricsCollector = new MockMetricsCollector();
-    context = {
+    context = createMockContext({
       metricsCollector: mockMetricsCollector,
-    } as Context;
+    });
     middleware = createMonitoringMiddleware(context);
   });
 
@@ -281,7 +315,11 @@ describe("monitoringMiddleware", () => {
 
     it("should handle various business events", async () => {
       // Test different business events
-      const events = [
+      const events: Array<{
+        event: string;
+        value: number;
+        labels: Record<string, string>;
+      }> = [
         { event: "user_login", value: 1, labels: { method: "email" } },
         { event: "content_shared", value: 3, labels: { type: "location" } },
         {
@@ -354,7 +392,11 @@ describe("monitoringMiddleware", () => {
 
     it("should handle various system metrics", async () => {
       // Test different system metrics
-      const systemMetrics = [
+      const systemMetrics: Array<{
+        name: string;
+        value: number;
+        labels?: Record<string, string>;
+      }> = [
         { name: "cpu_usage_percent", value: 65.2, labels: { core: "0" } },
         { name: "memory_usage_percent", value: 78.9 },
         {
@@ -394,10 +436,18 @@ describe("monitoringMiddleware", () => {
       // Arrange
       const failingMetricsCollector = {
         record: async () => err(new AnyError("Metrics service unavailable")),
+        recordMetric: async () =>
+          err(new AnyError("Metrics service unavailable")),
+        getMetrics: async () =>
+          err(new AnyError("Metrics service unavailable")),
+        recordHealthCheck: async () =>
+          err(new AnyError("Metrics service unavailable")),
+        getHealthStatus: async () =>
+          err(new AnyError("Metrics service unavailable")),
       };
-      const failingContext = {
+      const failingContext = createMockContext({
         metricsCollector: failingMetricsCollector,
-      } as Context;
+      });
       const failingMiddleware = createMonitoringMiddleware(failingContext);
 
       // Act & Assert - Should not throw errors

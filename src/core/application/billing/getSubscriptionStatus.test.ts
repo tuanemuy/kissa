@@ -4,11 +4,16 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getSubscriptionStatus } from "./getSubscriptionStatus";
 
 describe("getSubscriptionStatus", () => {
   let context: Context;
   let mockUser: User;
+  // biome-ignore lint/suspicious/noExplicitAny: Mock repository doesn't have typed interface
+  let mockUserRepository: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Mock service doesn't have typed interface
+  let mockPaymentGateway: any;
 
   beforeEach(() => {
     mockUser = {
@@ -25,19 +30,36 @@ describe("getSubscriptionStatus", () => {
       updatedAt: new Date(),
     };
 
-    context = {
-      userRepository: {
-        findById: async () => ok(mockUser),
-        update: async () => ok(mockUser),
-      } as Partial<typeof context.userRepository>,
-      paymentGateway: {
-        getSubscriptionStatus: async () =>
-          ok({
-            status: "active",
-            currentPlan: "basic" as const,
-          }),
-      } as Partial<typeof context.paymentGateway>,
-    } as Context;
+    mockUserRepository = {
+      findById: async () => ok(mockUser),
+      update: async () => ok(mockUser),
+      create: async () => ok(mockUser),
+      list: async () => ok({ items: [], count: 0 }),
+      findByEmail: async () => ok(null),
+      findByStripeCustomerId: async () => ok(null),
+      delete: async () => ok(undefined),
+    };
+
+    mockPaymentGateway = {
+      getSubscriptionStatus: async () =>
+        ok({
+          status: "active",
+          currentPlan: "basic" as const,
+        }),
+      createCustomer: async () => ok({ customerId: "cus_new" }),
+      createSubscription: async () =>
+        ok({ subscriptionId: "sub_new", status: "active" }),
+      updateSubscription: async () =>
+        ok({ subscriptionId: "sub_123", status: "active" }),
+      cancelSubscription: async () => ok(undefined),
+      processWebhook: async () => ok({ type: "subscription_change" }),
+      getPaymentHistory: async () => ok([]),
+    };
+
+    context = createMockContext({
+      userRepository: mockUserRepository,
+      paymentGateway: mockPaymentGateway,
+    });
   });
 
   describe("TLA+ behavior validation", () => {
@@ -188,8 +210,6 @@ describe("getSubscriptionStatus", () => {
     it("should sync plan from Stripe when different", async () => {
       mockUser.subscription = "basic";
 
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.getSubscriptionStatus = async () =>
         ok({
           status: "active",
@@ -197,8 +217,6 @@ describe("getSubscriptionStatus", () => {
         });
 
       let updateCalled = false;
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockUserRepository = context.userRepository as any;
       mockUserRepository.update = async (params: {
         id: UserId;
         subscription: string;
@@ -236,8 +254,6 @@ describe("getSubscriptionStatus", () => {
     });
 
     it("should handle Stripe API failure gracefully", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.getSubscriptionStatus = async () =>
         err(new Error("Stripe API error"));
 
@@ -259,8 +275,6 @@ describe("getSubscriptionStatus", () => {
     it("should consider paid plans with active Stripe status as active", async () => {
       mockUser.subscription = "premium";
 
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.getSubscriptionStatus = async () =>
         ok({
           status: "active",
@@ -299,8 +313,6 @@ describe("getSubscriptionStatus", () => {
     it("should handle suspended Stripe subscriptions", async () => {
       mockUser.subscription = "basic";
 
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.getSubscriptionStatus = async () =>
         ok({
           status: "past_due",
@@ -323,8 +335,6 @@ describe("getSubscriptionStatus", () => {
 
   describe("Error handling", () => {
     it("should handle user not found", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
       mockUserRepository.findById = async () => ok(null);
 
       const input = {
@@ -340,8 +350,6 @@ describe("getSubscriptionStatus", () => {
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
       mockUserRepository.findById = async () =>
         err(new RepositoryError("Database error"));
 
@@ -447,8 +455,6 @@ describe("getSubscriptionStatus", () => {
     it("should handle plan synchronization correctly", async () => {
       mockUser.subscription = "basic";
 
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.getSubscriptionStatus = async () =>
         ok({
           status: "active",

@@ -12,6 +12,7 @@ import {
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getSessionUser } from "./getSessionUser";
 
 describe("getSessionUser", () => {
@@ -63,7 +64,7 @@ describe("getSessionUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    context = {
+    context = createMockContext({
       userRepository: {
         findSessionByToken: async (token: string) => {
           if (token === "valid-token") return ok(validSession);
@@ -80,7 +81,7 @@ describe("getSessionUser", () => {
         updateSessionActivity: async () => ok(undefined),
         // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       } as any,
-    } as Context;
+    });
   });
 
   describe("Valid session handling", () => {

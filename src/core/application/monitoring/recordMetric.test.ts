@@ -3,6 +3,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { recordMetric } from "./recordMetric";
 
 // Mock metrics collector
@@ -12,6 +13,19 @@ class MockMetricsCollector {
   async recordMetric(metric: Metric) {
     this.recordedMetrics.push(metric);
     return ok(undefined);
+  }
+
+  async getMetrics(timeRange: { start: Date; end: Date }) {
+    return ok([]);
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: Mock method accepts any healthCheck for testing
+  async recordHealthCheck(healthCheck: any) {
+    return ok(undefined);
+  }
+
+  async getHealthStatus() {
+    return ok([]);
   }
 
   getRecordedMetrics() {
@@ -29,9 +43,9 @@ describe("recordMetric", () => {
 
   beforeEach(() => {
     mockMetricsCollector = new MockMetricsCollector();
-    context = {
+    context = createMockContext({
       metricsCollector: mockMetricsCollector,
-    } as Context;
+    });
   });
 
   describe("successful metric recording", () => {
@@ -281,10 +295,13 @@ describe("recordMetric", () => {
       const failingMetricsCollector = {
         recordMetric: async () =>
           err(new AnyError("Metrics service unavailable")),
+        getMetrics: async () => ok([]),
+        recordHealthCheck: async () => ok(undefined),
+        getHealthStatus: async () => ok([]),
       };
-      const failingContext = {
+      const failingContext = createMockContext({
         metricsCollector: failingMetricsCollector,
-      } as Context;
+      });
 
       // Act
       const result = await recordMetric(failingContext, {
@@ -306,10 +323,13 @@ describe("recordMetric", () => {
       const capacityFailingCollector = {
         recordMetric: async () =>
           err(new AnyError("Storage capacity exceeded")),
+        getMetrics: async () => ok([]),
+        recordHealthCheck: async () => ok(undefined),
+        getHealthStatus: async () => ok([]),
       };
-      const failingContext = {
+      const failingContext = createMockContext({
         metricsCollector: capacityFailingCollector,
-      } as Context;
+      });
 
       // Act
       const result = await recordMetric(failingContext, {

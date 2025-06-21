@@ -5,6 +5,7 @@ import { ApplicationError } from "@/lib/error";
 import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { discoverRegions } from "./discoverRegions";
 
 describe("discoverRegions", () => {
@@ -80,15 +81,9 @@ describe("discoverRegions", () => {
       mockRegionRepository.addRegion(region);
     }
 
-    context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          return ok(null);
-        },
-      },
+    context = createMockContext({
       regionRepository: mockRegionRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: Region discovery from formal specifications", () => {

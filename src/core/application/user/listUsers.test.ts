@@ -5,6 +5,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { listUsers } from "./listUsers";
 
 describe("listUsers", () => {
@@ -61,9 +62,9 @@ describe("listUsers", () => {
       mockUserRepository.addUser(user, `hashed_password_${user.id}`);
     }
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC: User listing from formal specifications", () => {

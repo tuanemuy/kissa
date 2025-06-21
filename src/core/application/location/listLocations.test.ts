@@ -13,6 +13,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { listLocations } from "./listLocations";
 
 describe("listLocations", () => {
@@ -102,16 +103,15 @@ describe("listLocations", () => {
     // Setup test data
     mockUserRepository.addUser(mockUser, "hashed_password");
     mockRegionRepository.addRegion(mockRegion);
-    // biome-ignore lint/complexity/noForEach: forEach is needed to setup test data with side effects
-    mockLocations.forEach((location) =>
-      mockLocationRepository.addLocation(location),
-    );
+    for (const location of mockLocations) {
+      mockLocationRepository.addLocation(location);
+    }
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("TLA+ behavior validation", () => {

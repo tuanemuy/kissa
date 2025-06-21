@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MockPasswordHasher } from "../../adapters/mock/passwordHasher";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import {
   type AuthenticateUserResult,
   authenticateUser,
@@ -82,10 +83,10 @@ describe("authenticateUser", () => {
     mockUserRepository.addUser(editorUser, "hashed_editorpass");
     mockUserRepository.addUser(adminUser, "hashed_adminpass");
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       passwordHasher: mockPasswordHasher,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-NF-007: Session management requirements", () => {

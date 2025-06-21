@@ -5,6 +5,7 @@ import { ApplicationError, RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import {
   type PinnedRegion,
   getUserPinnedRegions,
@@ -62,7 +63,7 @@ describe("getUserPinnedRegions", () => {
   };
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       favoriteRepository: {
         findPinnedRegionsByUserId: async (uid: UserId) => {
           if (uid === userId) {
@@ -80,7 +81,7 @@ describe("getUserPinnedRegions", () => {
         },
         // biome-ignore lint/suspicious/noExplicitAny: Mock context setup requires type assertion
       } as any,
-    } as Context;
+    });
   });
 
   describe("Basic functionality", () => {

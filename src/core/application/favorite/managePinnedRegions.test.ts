@@ -12,6 +12,7 @@ import { MockFavoriteRepository } from "../../adapters/mock/favoriteRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import {
   listPinnedRegions,
   pinRegion,
@@ -104,11 +105,11 @@ describe("managePinnedRegions", () => {
     mockRegionRepository.addRegion(publicRegion);
     mockRegionRepository.addRegion(privateRegion);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       favoriteRepository: mockFavoriteRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("pinRegion", () => {

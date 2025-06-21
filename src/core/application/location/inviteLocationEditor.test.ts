@@ -14,6 +14,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { inviteLocationEditor } from "./inviteLocationEditor";
 
 describe("inviteLocationEditor", () => {
@@ -105,7 +106,7 @@ describe("inviteLocationEditor", () => {
     mockRegionRepository.addRegion(mockRegion);
     mockLocationRepository.addLocation(mockLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
@@ -113,7 +114,7 @@ describe("inviteLocationEditor", () => {
         sendEmail: async () => ok(undefined),
         sendPush: async () => ok(undefined),
       },
-    } as unknown as Context;
+    });
   });
 
   describe("TLA+ behavior validation", () => {

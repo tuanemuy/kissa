@@ -11,6 +11,7 @@ import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import { MockRegionRepository } from "../../adapters/mock/regionRepository";
 import { MockUserRepository } from "../../adapters/mock/userRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { addFavorite, listFavorites, removeFavorite } from "./manageFavorites";
 
 describe("manageFavorites", () => {
@@ -137,12 +138,12 @@ describe("manageFavorites", () => {
     mockLocationRepository.addLocation(publicLocation);
     mockLocationRepository.addLocation(privateLocation);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       regionRepository: mockRegionRepository,
       locationRepository: mockLocationRepository,
       favoriteRepository: mockFavoriteRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("addFavorite", () => {

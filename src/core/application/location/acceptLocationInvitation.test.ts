@@ -10,6 +10,7 @@ import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MockLocationRepository } from "../../adapters/mock/locationRepository";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { acceptLocationInvitation } from "./acceptLocationInvitation";
 
 describe("acceptLocationInvitation", () => {
@@ -35,9 +36,9 @@ describe("acceptLocationInvitation", () => {
     // Add the location editor to the mock repository
     mockLocationRepository.addLocationEditor(mockLocationEditor);
 
-    context = {
+    context = createMockContext({
       locationRepository: mockLocationRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("TLA+ behavior validation", () => {

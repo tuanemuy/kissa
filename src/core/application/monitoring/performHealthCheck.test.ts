@@ -6,6 +6,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { performHealthCheck } from "./performHealthCheck";
 
 describe("performHealthCheck", () => {
@@ -47,14 +48,33 @@ describe("performHealthCheck", () => {
       getHealthStatus: async () => ok([healthyResult]),
     };
 
-    const mockUserRepository: Partial<UserRepository> = {
+    const mockUserRepository = {
       list: async () => ok({ items: [], count: 0 }),
+      // biome-ignore lint/suspicious/noExplicitAny: Mock repository returns any for testing
+      create: async () => ok({} as any),
+      findById: async () => ok(null),
+      findByEmail: async () => ok(null),
+      findByStripeCustomerId: async () => ok(null),
+      // biome-ignore lint/suspicious/noExplicitAny: Mock repository returns any for testing
+      update: async () => ok({} as any),
+      delete: async () => ok(undefined),
+      getHashedPassword: async () => ok("hashed-password"),
+      updatePassword: async () => ok(undefined),
+      // biome-ignore lint/suspicious/noExplicitAny: Mock repository returns any for testing
+      createSession: async () => ok({} as any),
+      findSessionById: async () => ok(null),
+      findSessionByToken: async () => ok(null),
+      // biome-ignore lint/suspicious/noExplicitAny: Mock repository returns any for testing
+      updateSessionActivity: async () => ok({} as any),
+      deleteSession: async () => ok(undefined),
+      deleteExpiredSessions: async () => ok(0),
+      deleteUserSessions: async () => ok(0),
     };
 
-    context = {
+    context = createMockContext({
       metricsCollector: mockMetricsCollector,
       userRepository: mockUserRepository,
-    } as Context;
+    });
   });
 
   describe("SPEC: Health check functionality from formal specifications", () => {

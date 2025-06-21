@@ -8,6 +8,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { removeLocationEditor } from "./removeLocationEditor";
 
 describe("removeLocationEditor", () => {
@@ -50,10 +51,10 @@ describe("removeLocationEditor", () => {
   };
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       locationRepository: new MockLocationRepository(),
       regionRepository: new MockRegionRepository(),
-    } as Partial<Context> as Context;
+    });
   });
 
   describe("successful editor removal", () => {

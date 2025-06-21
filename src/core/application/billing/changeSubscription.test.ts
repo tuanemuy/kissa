@@ -5,12 +5,19 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { changeSubscription } from "./changeSubscription";
 
 describe("changeSubscription", () => {
   let context: Context;
   let mockUser: User;
   let mockBillingEvent: BillingEvent;
+  // biome-ignore lint/suspicious/noExplicitAny: Mock repository doesn't have typed interface
+  let mockUserRepository: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Mock repository doesn't have typed interface
+  let mockBillingRepository: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Mock service doesn't have typed interface
+  let mockPaymentGateway: any;
 
   beforeEach(() => {
     mockUser = {
@@ -41,25 +48,43 @@ describe("changeSubscription", () => {
       createdAt: new Date(),
     };
 
-    context = {
-      userRepository: {
-        findById: async () => ok(mockUser),
-        update: async () => ok(mockUser),
-      } as Partial<typeof context.userRepository>,
-      billingRepository: {
-        create: async () => ok(mockBillingEvent),
-        updateStatus: async () => ok(mockBillingEvent),
-      } as Partial<typeof context.billingRepository>,
-      paymentGateway: {
-        createCustomer: async () => ok({ customerId: "cus_new" }),
-        createSubscription: async () =>
-          ok({ subscriptionId: "sub_new", status: "active" }),
-        updateSubscription: async () =>
-          ok({ subscriptionId: "sub_123", status: "active" }),
-        getSubscriptionStatus: async () =>
-          ok({ status: "active", currentPlan: "basic" as const }),
-      } as Partial<typeof context.paymentGateway>,
-    } as Context;
+    mockUserRepository = {
+      findById: async () => ok(mockUser),
+      update: async () => ok(mockUser),
+      create: async () => ok(mockUser),
+      list: async () => ok({ items: [], count: 0 }),
+      findByEmail: async () => ok(null),
+      findByStripeCustomerId: async () => ok(null),
+      delete: async () => ok(undefined),
+    };
+
+    mockBillingRepository = {
+      create: async () => ok(mockBillingEvent),
+      updateStatus: async () => ok(mockBillingEvent),
+      findById: async () => ok(mockBillingEvent),
+      list: async () => ok({ items: [], count: 0 }),
+      findLatestByUser: async () => ok(mockBillingEvent),
+      calculateTotalSpent: async () => ok(0),
+    };
+
+    mockPaymentGateway = {
+      createCustomer: async () => ok({ customerId: "cus_new" }),
+      createSubscription: async () =>
+        ok({ subscriptionId: "sub_new", status: "active" }),
+      updateSubscription: async () =>
+        ok({ subscriptionId: "sub_123", status: "active" }),
+      getSubscriptionStatus: async () =>
+        ok({ status: "active", currentPlan: "basic" as const }),
+      cancelSubscription: async () => ok(undefined),
+      processWebhook: async () => ok({ type: "subscription_change" }),
+      getPaymentHistory: async () => ok([]),
+    };
+
+    context = createMockContext({
+      userRepository: mockUserRepository,
+      billingRepository: mockBillingRepository,
+      paymentGateway: mockPaymentGateway,
+    });
   });
 
   describe("TLA+ behavior validation", () => {
@@ -202,8 +227,6 @@ describe("changeSubscription", () => {
 
     it("should handle customer creation failure", async () => {
       mockUser.stripeCustomerId = null;
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.createCustomer = async () =>
         err(new Error("Payment gateway error"));
 
@@ -252,8 +275,6 @@ describe("changeSubscription", () => {
 
   describe("Error handling", () => {
     it("should handle user not found", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
       mockUserRepository.findById = async () => ok(null);
 
       const input = {
@@ -270,8 +291,6 @@ describe("changeSubscription", () => {
     });
 
     it("should handle repository failure", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockUserRepository = context.userRepository as any;
       mockUserRepository.findById = async () =>
         err(new RepositoryError("Database error"));
 
@@ -290,14 +309,10 @@ describe("changeSubscription", () => {
     });
 
     it("should mark billing event as failed on payment gateway error", async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error handling requires type assertion
-      const mockPaymentGateway = context.paymentGateway as any;
       mockPaymentGateway.updateSubscription = async () =>
         err(new Error("Payment failed"));
 
       let updateStatusCalled = false;
-      // biome-ignore lint/suspicious/noExplicitAny: Testing requires type assertion
-      const mockBillingRepository = context.billingRepository as any;
       mockBillingRepository.updateStatus = async (params: {
         status: string;
       }) => {

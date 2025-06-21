@@ -4,6 +4,7 @@ import { AnyError } from "@/lib/errors";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { registerDeviceToken } from "./registerDeviceToken";
 
 // Mock push notification service
@@ -23,6 +24,78 @@ class MockPushNotificationService {
       lastUsedAt: new Date(),
     } as DeviceToken);
   }
+
+  async unregisterDeviceToken() {
+    return ok(undefined);
+  }
+
+  async getUserDeviceTokens() {
+    return ok([]);
+  }
+
+  async sendPushNotification() {
+    return ok([]);
+  }
+
+  async sendToChannel(
+    // biome-ignore lint/suspicious/noExplicitAny: Mock method accepts any channel for testing
+    channel: any,
+    userId: string,
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ) {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: userId as any,
+      channel,
+      status: "pending" as const,
+      payload: { title, body, data },
+      scheduledAt: new Date(),
+      retryCount: 0,
+    });
+  }
+
+  async getNotificationStatus() {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: "user-123" as any,
+      channel: "web" as const,
+      status: "pending" as const,
+      payload: {},
+      scheduledAt: new Date(),
+      retryCount: 0,
+    });
+  }
+
+  async retryFailedNotification() {
+    return ok({
+      id: "push-job-123",
+      // biome-ignore lint/suspicious/noExplicitAny: Mock ID for testing
+      notificationId: "notification-123" as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock user ID for testing
+      userId: "user-123" as any,
+      channel: "web" as const,
+      status: "pending" as const,
+      payload: {},
+      scheduledAt: new Date(),
+      retryCount: 1,
+    });
+  }
+
+  async processNotificationQueue() {
+    return ok(0);
+  }
+
+  async updateDeliveryStatus() {
+    return ok(undefined);
+  }
 }
 
 describe("registerDeviceToken", () => {
@@ -32,9 +105,9 @@ describe("registerDeviceToken", () => {
   const validToken = "FCM_TOKEN_ABCD1234567890";
 
   beforeEach(() => {
-    context = {
+    context = createMockContext({
       pushNotificationService: new MockPushNotificationService(),
-    } as Context;
+    });
   });
 
   describe("successful registrations", () => {

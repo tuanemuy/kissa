@@ -5,6 +5,7 @@ import { ApplicationError, AuthorizationError } from "@/lib/error";
 import { ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { createRegion } from "./createRegion";
 
 describe("createRegion", () => {
@@ -42,16 +43,9 @@ describe("createRegion", () => {
   beforeEach(() => {
     mockRegionRepository = new MockRegionRepository();
 
-    context = {
-      userRepository: {
-        findById: async (id: string) => {
-          if (id === editorUser.id) return ok(editorUser);
-          if (id === visitorUser.id) return ok(visitorUser);
-          return ok(null);
-        },
-      },
+    context = createMockContext({
       regionRepository: mockRegionRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-INV-1: Only editors can create regions (Alloy constraint)", () => {
@@ -114,12 +108,18 @@ describe("createRegion", () => {
       mockRegionRepository.addRegion(existingRegion);
 
       // Update context to return free editor
-      context.userRepository = {
-        findById: async (id: string) => {
-          if (id === freeEditorUser.id) return ok(freeEditorUser);
-          return ok(null);
+      context = createMockContext({
+        regionRepository: mockRegionRepository,
+        userRepository: {
+          ...context.userRepository,
+          findById: async (id: string) => {
+            if (id === freeEditorUser.id) return ok(freeEditorUser);
+            if (id === editorUser.id) return ok(editorUser);
+            if (id === visitorUser.id) return ok(visitorUser);
+            return ok(null);
+          },
         },
-      } as unknown as Context["userRepository"];
+      });
 
       const input = {
         name: "Exceeding Free Plan",

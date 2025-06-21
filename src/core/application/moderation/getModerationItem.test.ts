@@ -1,4 +1,4 @@
-// Mock moderation repository will be created inline
+import { MockModerationRepository } from "@/core/adapters/mock/moderationRepository";
 import type {
   ModerationItem,
   ModerationItemId,
@@ -9,10 +9,12 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { getModerationItem } from "./getModerationItem";
 
 describe("getModerationItem", () => {
   let context: Context;
+  let mockModerationRepository: MockModerationRepository;
 
   const validModerationItemId =
     "550e8400-e29b-41d4-a716-446655440001" as ModerationItemId;
@@ -32,23 +34,16 @@ describe("getModerationItem", () => {
   };
 
   beforeEach(() => {
-    context = {
-      moderationRepository: {
-        findById: async () => ok(mockModerationItem),
-        create: async () => ok(mockModerationItem),
-        update: async () => ok(mockModerationItem),
-        list: async () => ok({ items: [mockModerationItem], count: 1 }),
-        findByContent: async () => ok(null),
-      },
-    } as Partial<Context> as Context;
+    mockModerationRepository = new MockModerationRepository();
+    mockModerationRepository.addItem(mockModerationItem);
+
+    context = createMockContext({
+      moderationRepository: mockModerationRepository,
+    });
   });
 
   describe("successful retrieval", () => {
     it("should get existing moderation item", async () => {
-      // Arrange
-      context.moderationRepository.findById = async () =>
-        ok(mockModerationItem);
-
       // Act
       const result = await getModerationItem(context, validModerationItemId);
 
@@ -57,16 +52,16 @@ describe("getModerationItem", () => {
       if (result.isOk()) {
         expect(result.value).toEqual(mockModerationItem);
         expect(result.value?.id).toBe(validModerationItemId);
-        expect(result.value?.status).toBe("under_review");
+        expect(result.value?.status).toBe("pending");
       }
     });
 
     it("should return null for non-existent moderation item", async () => {
       // Arrange
-      context.moderationRepository.findById = async () => ok(null);
+      const nonExistentId = "non-existent-id" as ModerationItemId;
 
       // Act
-      const result = await getModerationItem(context, validModerationItemId);
+      const result = await getModerationItem(context, nonExistentId);
 
       // Assert
       expect(result.isOk()).toBe(true);
@@ -82,7 +77,8 @@ describe("getModerationItem", () => {
         status: "approved",
         moderationNote: "Content reviewed and deemed appropriate",
       };
-      context.moderationRepository.findById = async () => ok(approvedItem);
+      mockModerationRepository.clear();
+      mockModerationRepository.addItem(approvedItem);
 
       // Act
       const result = await getModerationItem(context, validModerationItemId);
@@ -104,7 +100,8 @@ describe("getModerationItem", () => {
         status: "rejected",
         moderationNote: "Violated community guidelines section 3.2",
       };
-      context.moderationRepository.findById = async () => ok(rejectedItem);
+      mockModerationRepository.clear();
+      mockModerationRepository.addItem(rejectedItem);
 
       // Act
       const result = await getModerationItem(context, validModerationItemId);
@@ -152,8 +149,7 @@ describe("getModerationItem", () => {
   describe("repository errors", () => {
     it("should fail when repository throws error", async () => {
       // Arrange
-      context.moderationRepository.findById = async () =>
-        err(new RepositoryError("Database connection failed"));
+      mockModerationRepository.setShouldFail(true);
 
       // Act
       const result = await getModerationItem(context, validModerationItemId);
@@ -168,8 +164,7 @@ describe("getModerationItem", () => {
 
     it("should fail when repository is unavailable", async () => {
       // Arrange
-      context.moderationRepository.findById = async () =>
-        err(new RepositoryError("Service temporarily unavailable"));
+      mockModerationRepository.setShouldFail(true);
 
       // Act
       const result = await getModerationItem(context, validModerationItemId);
@@ -185,10 +180,6 @@ describe("getModerationItem", () => {
 
   describe("formal specification compliance", () => {
     it("should enforce business rules for moderation item retrieval", async () => {
-      // Arrange
-      context.moderationRepository.findById = async () =>
-        ok(mockModerationItem);
-
       // Act
       const result = await getModerationItem(context, validModerationItemId);
 
@@ -202,20 +193,12 @@ describe("getModerationItem", () => {
         expect(result.value.reportedBy).toBeDefined();
         expect(result.value.reportReason).toBeDefined();
         expect(result.value.status).toBeDefined();
-        expect(result.value.status).toBeDefined();
         expect(result.value.createdAt).toBeInstanceOf(Date);
         expect(result.value.updatedAt).toBeInstanceOf(Date);
       }
     });
 
     it("should maintain system invariants during retrieval", async () => {
-      // Arrange
-      context.moderationRepository.findById = async (id) => {
-        // Verify query parameters match business logic
-        expect(id).toBe(validModerationItemId);
-        return ok(mockModerationItem);
-      };
-
       // Act
       const result = await getModerationItem(context, validModerationItemId);
 
@@ -234,8 +217,8 @@ describe("getModerationItem", () => {
           contentType,
           contentId: `${contentType}-123`,
         };
-        context.moderationRepository.findById = async () =>
-          ok(typeSpecificItem);
+        mockModerationRepository.clear();
+        mockModerationRepository.addItem(typeSpecificItem);
 
         // Act
         const result = await getModerationItem(context, validModerationItemId);
@@ -264,8 +247,8 @@ describe("getModerationItem", () => {
           status,
           moderatedBy,
         };
-        context.moderationRepository.findById = async () =>
-          ok(stateSpecificItem);
+        mockModerationRepository.clear();
+        mockModerationRepository.addItem(stateSpecificItem);
 
         // Act
         const result = await getModerationItem(context, validModerationItemId);
@@ -287,7 +270,8 @@ describe("getModerationItem", () => {
         moderatedBy: "moderator-789" as UserId,
         moderationNote: "Detailed moderation notes",
       };
-      context.moderationRepository.findById = async () => ok(completeItem);
+      mockModerationRepository.clear();
+      mockModerationRepository.addItem(completeItem);
 
       // Act
       const result = await getModerationItem(context, validModerationItemId);
@@ -299,11 +283,10 @@ describe("getModerationItem", () => {
         expect(result.value.contentType).toBe(completeItem.contentType);
         expect(result.value.contentId).toBe(completeItem.contentId);
         expect(result.value.reportedBy).toBe(completeItem.reportedBy);
-        expect(result.value.reason).toBe(completeItem.reason);
+        expect(result.value.reportReason).toBe(completeItem.reportReason);
         expect(result.value.status).toBe(completeItem.status);
-        expect(result.value.assignedTo).toBe(completeItem.assignedTo);
-        expect(result.value.moderatorNotes).toBe(completeItem.moderatorNotes);
-        expect(result.value.resolution).toBe(completeItem.resolution);
+        expect(result.value.moderatedBy).toBe(completeItem.moderatedBy);
+        expect(result.value.moderationNote).toBe(completeItem.moderationNote);
       }
     });
   });

@@ -8,6 +8,7 @@ import { RepositoryError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { sendNotification } from "./sendNotification";
 
 describe("sendNotification", () => {
@@ -49,11 +50,11 @@ describe("sendNotification", () => {
     mockUserRepository.addUser(mockUser, "hashed-password");
     mockNotificationRepository.addNotification(mockNotification);
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       notificationRepository: mockNotificationRepository,
       notificationService: mockNotificationService,
-    } as unknown as Context;
+    });
   });
 
   describe("TLA+ behavior validation", () => {

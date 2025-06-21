@@ -4,6 +4,7 @@ import { ApplicationError } from "@/lib/error";
 import { err, ok } from "neverthrow";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Context } from "../context";
+import { createMockContext } from "../testUtils/mockContext";
 import { processPaymentWebhook } from "./processPaymentWebhook";
 
 describe("processPaymentWebhook", () => {
@@ -56,10 +57,10 @@ describe("processPaymentWebhook", () => {
       create: async () => ok(testBillingEvent),
     };
 
-    context = {
+    context = createMockContext({
       userRepository: mockUserRepository,
       billingRepository: mockBillingRepository,
-    } as unknown as Context;
+    });
   });
 
   describe("SPEC-TLA+: Payment webhook processing", () => {
