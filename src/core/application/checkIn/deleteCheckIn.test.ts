@@ -48,6 +48,8 @@ describe("deleteCheckIn", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       favoriteRepository: {} as any,
       // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
+      fileUploadRepository: {} as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       moderationRepository: {} as any,
       // biome-ignore lint/suspicious/noExplicitAny: Mock context service for testing
       notificationRepository: {} as any,
