@@ -1,6 +1,7 @@
 "use client";
 
 import { createLocationAction } from "@/actions/location";
+import { uploadImagesAction } from "@/actions/upload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocationPicker } from "@/components/ui/location-picker";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, MapPin } from "lucide-react";
@@ -46,6 +49,12 @@ function NewLocationForm({ regionId }: { regionId: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,6 +64,20 @@ function NewLocationForm({ regionId }: { regionId: string }) {
     const formData = new FormData(event.currentTarget);
     formData.append("regionId", regionId);
 
+    // Add location data from map
+    if (selectedLocation) {
+      formData.set("latitude", selectedLocation.lat.toString());
+      formData.set("longitude", selectedLocation.lng.toString());
+    }
+    if (selectedAddress) {
+      formData.set("address", selectedAddress);
+    }
+
+    // Add uploaded images
+    if (uploadedImages.length > 0) {
+      formData.set("images", JSON.stringify(uploadedImages));
+    }
+
     try {
       await createLocationAction(formData);
     } catch (err) {
@@ -62,6 +85,20 @@ function NewLocationForm({ regionId }: { regionId: string }) {
       setIsSubmitting(false);
     }
   }
+
+  const handleImageUpload = async (files: File[]) => {
+    try {
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append("images", file);
+      }
+
+      const imageUrls = await uploadImagesAction(formData);
+      setUploadedImages((prev) => [...prev, ...imageUrls]);
+    } catch (error) {
+      setError("画像のアップロードに失敗しました");
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -124,24 +161,18 @@ function NewLocationForm({ regionId }: { regionId: string }) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Address
-                </Label>
-                <Textarea
-                  id="address"
-                  name="address"
-                  maxLength={500}
-                  rows={2}
-                  placeholder="Enter the address (optional)"
-                  disabled={isSubmitting}
-                />
-              </div>
+              <LocationPicker
+                onLocationChange={setSelectedLocation}
+                onAddressChange={setSelectedAddress}
+                disabled={isSubmitting}
+              />
 
+              {/* Hidden inputs for manual coordinate entry */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="latitude">Latitude</Label>
+                  <Label htmlFor="latitude">
+                    Latitude (optional manual entry)
+                  </Label>
                   <Input
                     id="latitude"
                     name="latitude"
@@ -151,10 +182,21 @@ function NewLocationForm({ regionId }: { regionId: string }) {
                     max="90"
                     placeholder="-90 to 90"
                     disabled={isSubmitting}
+                    value={selectedLocation?.lat || ""}
+                    onChange={(e) => {
+                      const lat = Number.parseFloat(e.target.value);
+                      if (!Number.isNaN(lat) && selectedLocation) {
+                        setSelectedLocation({ ...selectedLocation, lat });
+                      } else if (!Number.isNaN(lat)) {
+                        setSelectedLocation({ lat, lng: 0 });
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="longitude">Longitude</Label>
+                  <Label htmlFor="longitude">
+                    Longitude (optional manual entry)
+                  </Label>
                   <Input
                     id="longitude"
                     name="longitude"
@@ -164,9 +206,26 @@ function NewLocationForm({ regionId }: { regionId: string }) {
                     max="180"
                     placeholder="-180 to 180"
                     disabled={isSubmitting}
+                    value={selectedLocation?.lng || ""}
+                    onChange={(e) => {
+                      const lng = Number.parseFloat(e.target.value);
+                      if (!Number.isNaN(lng) && selectedLocation) {
+                        setSelectedLocation({ ...selectedLocation, lng });
+                      } else if (!Number.isNaN(lng)) {
+                        setSelectedLocation({ lat: 0, lng });
+                      }
+                    }}
                   />
                 </div>
               </div>
+
+              <ImageUpload
+                onImageUpload={handleImageUpload}
+                onImagesChange={setUploadedImages}
+                initialImages={uploadedImages}
+                disabled={isSubmitting}
+                maxFiles={10}
+              />
 
               <div className="space-y-4">
                 <div>

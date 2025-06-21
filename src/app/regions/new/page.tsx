@@ -1,6 +1,7 @@
 "use client";
 
 import { createRegionAction } from "@/actions/region";
+import { uploadImagesAction } from "@/actions/upload";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,8 +10,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocationPicker } from "@/components/ui/location-picker";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -22,12 +25,41 @@ export default function NewRegionPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
+  const [address, setAddress] = useState<string>("");
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const formData = new FormData(e.currentTarget);
+
+      // Add location data
+      if (location) {
+        formData.append("latitude", location.lat.toString());
+        formData.append("longitude", location.lng.toString());
+      }
+
+      if (address) {
+        formData.append("address", address);
+      }
+
+      // Upload images first if any
+      if (selectedImages.length > 0) {
+        const imageFormData = new FormData();
+        for (const image of selectedImages) {
+          imageFormData.append("images", image);
+        }
+
+        const imageUrls = await uploadImagesAction(imageFormData);
+        formData.append("imageUrls", JSON.stringify(imageUrls));
+      }
+
       await createRegionAction(formData);
       // Redirect will happen automatically via the server action
     } catch (err) {
@@ -49,20 +81,19 @@ export default function NewRegionPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Create New Region</CardTitle>
+          <CardTitle>新しい地域を作成</CardTitle>
           <CardDescription>
-            Create a new region to organize your locations. Regions can be
-            public or private.
+            場所を整理するための新しい地域を作成します。地域は公開・非公開を選択できます。
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Region Name</Label>
+              <Label htmlFor="name">地域名</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder="Enter region name"
+                placeholder="地域名を入力してください"
                 required
                 maxLength={100}
                 disabled={isSubmitting}
@@ -70,54 +101,35 @@ export default function NewRegionPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">説明</Label>
               <Textarea
                 id="description"
                 name="description"
-                placeholder="Describe your region..."
+                placeholder="地域の説明を入力してください..."
                 maxLength={1000}
                 rows={3}
                 disabled={isSubmitting}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="latitude">Latitude</Label>
-                <Input
-                  id="latitude"
-                  name="latitude"
-                  type="number"
-                  step="any"
-                  min="-90"
-                  max="90"
-                  placeholder="e.g. 35.6762"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input
-                  id="longitude"
-                  name="longitude"
-                  type="number"
-                  step="any"
-                  min="-180"
-                  max="180"
-                  placeholder="e.g. 139.6503"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
+            <LocationPicker
+              onLocationChange={setLocation}
+              onAddressChange={setAddress}
+              disabled={isSubmitting}
+            />
+
+            <ImageUpload
+              onImageUpload={setSelectedImages}
+              maxFiles={10}
+              disabled={isSubmitting}
+            />
 
             <div className="flex items-center space-x-2">
               <Switch id="isPublic" name="isPublic" disabled={isSubmitting} />
               <Label htmlFor="isPublic" className="space-y-1">
-                <div className="font-medium">Make this region public</div>
+                <div className="font-medium">この地域を公開する</div>
                 <div className="text-sm text-muted-foreground">
-                  Public regions can be discovered and viewed by other users
+                  公開された地域は他のユーザーから発見・閲覧できます
                 </div>
               </Label>
             </div>
@@ -141,7 +153,7 @@ export default function NewRegionPage() {
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Create Region
+                地域を作成
               </Button>
             </div>
           </form>
